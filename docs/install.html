@@ -352,6 +352,7 @@
       <h2>Hvað þú færð</h2>
       <ul>
         <li>Sjálfvirk regla (<code>origo-bc-accounting</code>) sem kennir Claude vinnuflæðið hjá Origo — nafnrými, tengiforrit, uppfærslureglur.</li>
+        <li>Þróunarregla (<code>origo-bc-cloud-events</code>) sem hleður Cloud Events API-skilgreiningum, skilaboðagerðum og dæmum gegnum MCP-þjóninn.</li>
         <li><code>/origo-bc-setup</code> — fyrsti tengingaraðstoðarmaður.</li>
         <li><code>/origo-bc-add-env</code> — bætir við fleiri BC-umhverfum.</li>
         <li><code>/origo-bc-list-environments</code> — birtir öll tengd umhverfi.</li>
@@ -484,41 +485,20 @@ claude plugin install origo-bc@origo</code></pre>
         hana upp í <code>~/.claude/plugins/</code>. Endurræstu Claude Code
         (eða opnaðu nýja sessjón) til að skilgreiningin hlaðist.
       </p>
+
+      <h3>3. Uppfæra plugin</h3>
       <p>
-        Til að uppfæra seinna:
-        <code>claude plugin update origo-bc@origo</code>.
-        Til að fjarlægja:
-        <code>claude plugin uninstall origo-bc</code>.
+        Þegar ný útgáfa kemur út, keyrðu:
+      </p>
+      <pre><code>claude plugin update origo-bc@origo</code></pre>
+      <p>
+        Endurræstu Claude Code (eða opnaðu nýja sessjón) eftir
+        uppfærslu.
       </p>
       <p class="small">
-        Aukaleið: ef þú vilt frekar nota Azure-blobbinn sem
-        markaðstorg (sama innihald):
+        Til að fjarlægja: <code>claude plugin uninstall origo-bc</code>
       </p>
-      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
-claude plugin install origo-bc@origo</code></pre>
 
-      <h3>Bætir við Cloud Events-þekkingu</h3>
-      <p>
-        <strong>Cloud Events</strong> er vefþjónusta Origo sem hægt er
-        að kalla í úr hvaða forritunarmáli sem styður HTTP og OAuth —
-        C#, Python, JavaScript/TypeScript, AL, PowerShell, Go, Java,
-        eða hvað annað sem hentar. Ef þú ert að skrifa slíka
-        integration er ráðlagt að hafa Cloud Events-þekkingarregluna
-        virkjaða; hún lýsir endapunktunum, atburðagerðum, payload-sniði
-        og auðkenningu, og leiðir Claude í gegnum rétt mynstur óháð
-        forritunarmáli.
-      </p>
-      <p>Reglan liggur á:</p>
-      <div class="url-row">
-        <a href="https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md" target="_blank" rel="noopener">https://origopublic.blob.core.windows.net/help/Cloud Events/bc27/en-US/SKILL.md</a>
-      </div>
-      <p style="margin-top:10px;">
-        Þegar þú ert tengd/ur við BC í gegnum <code>/origo-bc-setup</code>,
-        hleður Claude reglunni sjálfkrafa gegnum <code>bc-cloud-events</code>
-        <em>remote-loader</em>-skilgreininguna í MCP-Skills. Ef þú vilt hafa
-        regluna staðbundna (fyrir <em>offline</em>-vinnu), vistaðu skrána
-        sem <code>~/.claude/skills/bc-cloud-events/SKILL.md</code>.
-      </p>
 
       <!-- ============================ SAMEIGINLEGT ============================ -->
       <h2 id="entra">Forkrafa — Entra App Registration</h2>
@@ -838,6 +818,7 @@ claude plugin install origo-bc@origo</code></pre>
       <h2>What you get</h2>
       <ul>
         <li>An always-on rule (<code>origo-bc-accounting</code>) that teaches Claude the Origo BC workflow — namespaces, connection formats, update rules.</li>
+        <li>A development rule (<code>origo-bc-cloud-events</code>) that loads the Cloud Events API definitions, message types, and examples via the MCP server.</li>
         <li><code>/origo-bc-setup</code> — first-time connection wizard.</li>
         <li><code>/origo-bc-add-env</code> — add additional BC tenants.</li>
         <li><code>/origo-bc-list-environments</code> — list everything connected.</li>
@@ -969,41 +950,19 @@ claude plugin install origo-bc@origo</code></pre>
         it into <code>~/.claude/plugins/</code>. Restart Claude Code
         (or open a new session) so the definitions load.
       </p>
+
+      <h3>3. Update the plugin</h3>
       <p>
-        To update later:
-        <code>claude plugin update origo-bc@origo</code>.
-        To remove: <code>claude plugin uninstall origo-bc</code>.
+        When a new version is released, run:
+      </p>
+      <pre><code>claude plugin update origo-bc@origo</code></pre>
+      <p>
+        Restart Claude Code (or open a new session) after updating.
       </p>
       <p class="small">
-        Alternative: you can use the Azure blob as marketplace instead
-        (same content):
+        To remove: <code>claude plugin uninstall origo-bc</code>
       </p>
-      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
-claude plugin install origo-bc@origo</code></pre>
 
-      <h3>Add the Cloud Events skill</h3>
-      <p>
-        <strong>Cloud Events</strong> is an Origo web service you can
-        call from any language that speaks HTTP and OAuth — C#, Python,
-        JavaScript/TypeScript, AL, PowerShell, Go, Java, whatever fits
-        your stack. If you're writing an integration against it, keep
-        the Cloud Events skill loaded; it documents the endpoints, event
-        types, payload shapes, and authentication, and guides Claude
-        through the right patterns regardless of the language you're
-        coding in.
-      </p>
-      <p>The skill lives at:</p>
-      <div class="url-row">
-        <a href="https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md" target="_blank" rel="noopener">https://origopublic.blob.core.windows.net/help/Cloud Events/bc27/en-US/SKILL.md</a>
-      </div>
-      <p style="margin-top:10px;">
-        Once you're connected to BC via <code>/origo-bc-setup</code>,
-        Claude loads the skill automatically through the
-        <code>bc-cloud-events</code> <em>remote-loader</em> entry in
-        MCP-Skills. If you prefer a local copy (e.g. for offline work),
-        save the file as
-        <code>~/.claude/skills/bc-cloud-events/SKILL.md</code>.
-      </p>
 
       <!-- ============================ SHARED ============================ -->
       <h2 id="entra">Prerequisite — Entra App Registration</h2>
