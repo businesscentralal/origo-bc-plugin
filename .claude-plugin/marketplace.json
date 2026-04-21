@@ -2,7 +2,7 @@
   "name": "origo",
   "owner": {
     "name": "Origo hf.",
-    "email": "mcp@origo.is",
+    "email": "service@origo.is",
     "url": "https://origo.is"
   },
   "description": "Origo plugins for Claude Cowork / Claude Code — Business Central integration and related tooling.",

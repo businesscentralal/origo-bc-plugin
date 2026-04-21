@@ -128,4 +128,4 @@ verify before publishing this instruction to colleagues.)
 
 ## Contact
 
-Origo hf. · <mcp@origo.is> · <https://dynamics.is>
+Origo hf. · <service@origo.is> · <https://dynamics.is>
