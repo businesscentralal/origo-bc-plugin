@@ -183,3 +183,47 @@ steps:
       STORAGE_SAS_TOKEN: $(StorageSasToken)
     displayName: Release origo-bc.plugin to public blob
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+  # ---------------------------------------------------------------------
+  # Upload bilingual install guide (docs/install.html) to the same blob
+  # path. Rendered directly in the browser at
+  #   https://origopublic.blob.core.windows.net/resources/mcp/install.html
+  # Always overwritten on each build so content stays in sync with the
+  # repo.
+  # ---------------------------------------------------------------------
+  - bash: |
+      set -euo pipefail
+
+      DOC_FILE="docs/install.html"
+      if [[ ! -f "$DOC_FILE" ]]; then
+        echo "ERROR: $DOC_FILE not found" >&2
+        exit 1
+      fi
+
+      BASE="${STORAGE_BASE_URL%/}"
+      CONTAINER="$(BLOB_CONTAINER)"
+      PREFIX="$(BLOB_PREFIX)"
+      ACCOUNT=$(echo "$BASE" | sed -E 's#https?://([^.]+)\..*#\1#')
+      TARGET_URL="$BASE/$CONTAINER/$PREFIX/install.html"
+
+      echo "Uploading $DOC_FILE"
+      echo "  -> $TARGET_URL"
+
+      az storage blob upload \
+        --account-name "$ACCOUNT" \
+        --container-name "$CONTAINER" \
+        --name "$PREFIX/install.html" \
+        --file "$DOC_FILE" \
+        --sas-token "$STORAGE_SAS_TOKEN" \
+        --overwrite true \
+        --content-type "text/html; charset=utf-8" \
+        --content-cache-control "public, max-age=300" \
+        --only-show-errors
+
+      echo ""
+      echo "Install guide URL: $TARGET_URL"
+    env:
+      STORAGE_BASE_URL: $(StorageBaseURL)
+      STORAGE_SAS_TOKEN: $(StorageSasToken)
+    displayName: Upload install guide to public blob
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))

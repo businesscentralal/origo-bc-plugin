@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="is">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Origo BC — Cowork plugin uppsetning / installation</title>
+  <meta name="description" content="Leiðbeiningar um uppsetningu á origo-bc Cowork plugin-inu — tengir Claude við Business Central hjá Origo. Installation guide for the origo-bc Cowork plugin.">
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%231a365d'/><text x='32' y='42' font-family='system-ui' font-size='28' font-weight='700' fill='white' text-anchor='middle'>o</text></svg>">
+  <style>
+    :root {
+      --bg: #fbfbfc;
+      --panel: #ffffff;
+      --ink: #1b2430;
+      --muted: #5a6372;
+      --line: #e4e7ec;
+      --accent: #1a365d;
+      --accent-ink: #ffffff;
+      --accent-soft: #eef2f8;
+      --code-bg: #0f172a;
+      --code-ink: #e2e8f0;
+      --warn-bg: #fff7ed;
+      --warn-line: #fdba74;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1217;
+        --panel: #161b22;
+        --ink: #e6e9ef;
+        --muted: #97a0ad;
+        --line: #262c36;
+        --accent: #4a7abe;
+        --accent-ink: #0f1217;
+        --accent-soft: #1a2636;
+        --code-bg: #0a0d12;
+        --code-ink: #d7dde5;
+        --warn-bg: #2a1d10;
+        --warn-line: #a96820;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 780px; margin: 0 auto; padding: 32px 20px 80px; }
+    header.hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 28px 28px 24px;
+      margin-bottom: 28px;
+    }
+    .lang-toggle {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+    .lang-toggle a {
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+    .lang-toggle a.active {
+      color: var(--ink);
+      background: var(--accent-soft);
+      border-color: var(--line);
+    }
+    .lang-toggle a:hover { color: var(--ink); }
+    h1 {
+      font-size: 28px;
+      margin: 0 0 6px;
+      letter-spacing: -0.01em;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      background: var(--accent-soft);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+    }
+    .hero p.lede {
+      color: var(--muted);
+      font-size: 16px;
+      margin: 0 0 18px;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    .cta:hover { opacity: 0.92; }
+    .cta svg { width: 16px; height: 16px; }
+    .subcta {
+      display: inline-block;
+      margin-left: 14px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .subcta:hover { color: var(--ink); text-decoration: underline; }
+    h2 {
+      font-size: 20px;
+      margin: 36px 0 10px;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 16px;
+      margin: 22px 0 6px;
+      color: var(--ink);
+    }
+    p { margin: 0 0 12px; }
+    a { color: var(--accent); }
+    ol, ul { margin: 0 0 14px; padding-left: 22px; }
+    ol li, ul li { margin-bottom: 6px; }
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      background: var(--accent-soft);
+      border: 1px solid var(--line);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 14px 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0 0 16px;
+    }
+    pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+    .callout {
+      border-left: 3px solid var(--warn-line);
+      background: var(--warn-bg);
+      padding: 12px 14px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+    footer a { color: inherit; }
+    .url-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    .url-row a { color: #9ac1f5; text-decoration: none; }
+    .url-row a:hover { text-decoration: underline; }
+    [data-lang] { display: none; }
+    html[lang="is"] [data-lang="is"],
+    html[lang="en"] [data-lang="en"] { display: block; }
+    /* Inline lang spans used inside other blocks */
+    span[data-lang] { display: none; }
+    html[lang="is"] span[data-lang="is"],
+    html[lang="en"] span[data-lang="en"] { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <nav class="lang-toggle" aria-label="Language">
+        <a href="#" data-set-lang="is">Íslenska</a>
+        <a href="#en" data-set-lang="en">English</a>
+      </nav>
+      <span class="tag">origo-bc &middot; Cowork plugin</span>
+
+      <div data-lang="is">
+        <h1>Tengdu Claude við Business Central</h1>
+        <p class="lede">
+          <code>origo-bc</code> er Cowork-viðbót sem tengir Claude-spjall
+          við Origo Business Central MCP-þjón. Þessi síða er
+          uppsetningarleiðbeiningar fyrir samstarfsfólk.
+        </p>
+        <a class="cta" href="origo-bc.plugin" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Sækja nýjustu útgáfu (.plugin)
+        </a>
+        <a class="subcta" href="#versions">Eða veldu fasta útgáfu &rarr;</a>
+      </div>
+
+      <div data-lang="en">
+        <h1>Connect Claude to Business Central</h1>
+        <p class="lede">
+          <code>origo-bc</code> is a Cowork plugin that wires Claude up
+          to the Origo Business Central MCP server. This page is the
+          install guide for colleagues.
+        </p>
+        <a class="cta" href="origo-bc.plugin" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download latest (.plugin)
+        </a>
+        <a class="subcta" href="#versions">Or pick a pinned version &rarr;</a>
+      </div>
+    </header>
+
+    <!-- ============================================================= -->
+    <!--                        ÍSLENSKA                                -->
+    <!-- ============================================================= -->
+    <div data-lang="is">
+
+      <h2>Hvað þú færð</h2>
+      <ul>
+        <li>Sjálfvirk regla (<code>bc-mcp-connection-rules</code>) sem kennir Claude vinnuflæðið hjá Origo — nafnrými, tengiforrit, uppfærslureglur.</li>
+        <li><code>/origo-bc-setup</code> — fyrsti tengingaraðstoðarmaður.</li>
+        <li><code>/origo-bc-add-env</code> — bætir við fleiri BC-umhverfum.</li>
+        <li><code>/origo-bc-list-environments</code> — birtir öll tengd umhverfi.</li>
+        <li><code>/origo-bc-switch-company</code> — skipta um sjálfgefið fyrirtæki.</li>
+      </ul>
+
+      <h2>Áður en þú byrjar</h2>
+      <div class="card">
+        <h3>Claude Cowork</h3>
+        <p>
+          Plugin-ar virka <strong>aðeins í Cowork</strong> (ekki í
+          venjulegu Claude Desktop spjalli og ekki á claude.ai á vefnum).
+          Sæktu Cowork frá
+          <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>
+          og veldu Cowork-ham.
+        </p>
+
+        <h3>Node.js 18 eða nýrri</h3>
+        <p>
+          Tengingin keyrir í gegnum lítið Node-ferli sem fylgir með
+          plugin-inu. Staðfestu að Node sé uppsett:
+        </p>
+        <pre><code>node --version</code></pre>
+        <p>
+          Ef skipunin finnst ekki — sæktu LTS-útgáfuna frá
+          <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
+          og endurræstu Cowork eftir uppsetningu.
+        </p>
+      </div>
+
+      <h2>1. Sækja plugin-inn</h2>
+      <p>Smelltu á hnappinn efst á síðunni eða afritaðu slóðina:</p>
+      <div class="url-row">
+        <a href="origo-bc.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin</a>
+      </div>
+      <p style="margin-top:10px;">
+        Skráin er á bilinu 20–40 KB og heitir <code>origo-bc.plugin</code>.
+      </p>
+
+      <h2>2. Setja upp í Cowork</h2>
+      <p>Tvær leiðir — báðar virka:</p>
+
+      <h3>Leið A — draga í spjall</h3>
+      <ol>
+        <li>Opnaðu hvaða spjallglugga sem er í Cowork.</li>
+        <li>Dragðu <code>origo-bc.plugin</code> inn í innsláttarreitinn.</li>
+        <li><strong>Sendu skilaboðin</strong> (ekki bara hætta við — þú
+          þarft að ýta á <em>Send</em>).</li>
+        <li>Claude svarar með uppsetningarkorti — smelltu á
+          <em>Install</em>.</li>
+      </ol>
+
+      <h3>Leið B — gegnum stillingar</h3>
+      <ol>
+        <li>Í Cowork: <em>Settings &rarr; Plugins</em>.</li>
+        <li>Smelltu á <em>Install from file</em>.</li>
+        <li>Veldu <code>origo-bc.plugin</code> sem þú sóttir.</li>
+        <li>Staðfestu uppsetninguna.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>Ef uppsetningakortið birtist ekki</strong>
+        Athugaðu að þú sért í <em>Cowork-ham</em>, ekki venjulegu
+        Claude-spjalli. Titilslá gluggans ætti að segja „Cowork". Venjulegt
+        Claude Desktop styður ekki plugin-install.
+      </div>
+
+      <h2>3. Fyrsta tenging</h2>
+      <p>Byrjaðu nýtt spjall og skrifaðu:</p>
+      <pre><code>/origo-bc-setup</code></pre>
+      <p>Aðstoðarmaðurinn spyr þig um:</p>
+      <ol>
+        <li><strong>MCP-slóð</strong> — <code>https://dynamics.is/api/mcp</code> er sjálfgefið.</li>
+        <li><strong>Fyrirtækisnafn</strong> — eins og það birtist í BC (t.d. <em>Origo hf.</em>).</li>
+        <li><strong>Sjálfgefna auðkenninguna</strong> — Claude setur upp rétt format fyrir þig.</li>
+      </ol>
+      <p>Þegar stofnunin er tilbúin sérðu <code>setup_origo_bc_environment</code> keyrt og MCP-þjónninn birtist í tólalista Claude.</p>
+
+      <h2>4. Bæta við fleiri umhverfum</h2>
+      <p>Ef þú vinnur með fleira en eitt BC-fyrirtæki:</p>
+      <pre><code>/origo-bc-add-env</code></pre>
+      <p>Hver tenging fær sitt nafn (t.d. <em>prod</em>, <em>test</em>, <em>cronus</em>) og þú getur skipt á milli þeirra án þess að endurstilla.</p>
+
+      <h3>Skipta um sjálfgefið fyrirtæki</h3>
+      <pre><code>/origo-bc-switch-company</code></pre>
+
+      <h3>Sjá öll tengd umhverfi</h3>
+      <pre><code>/origo-bc-list-environments</code></pre>
+
+      <h2>Bilanagreining</h2>
+      <div class="card">
+        <h3><code>node: command not found</code></h3>
+        <p>Node.js er ekki á PATH. Settu upp LTS frá
+          <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
+          og endurræstu Cowork.</p>
+
+        <h3>MCP-tólin birtast ekki</h3>
+        <p>Lokaðu Cowork alveg (táknið í kerfisbakka &rarr; <em>Quit</em>)
+          og opnaðu aftur. MCP-þjónar sækjast aðeins við ræsingu.</p>
+
+        <h3>Rangt fyrirtæki í svörum</h3>
+        <p>Keyrðu <code>/origo-bc-switch-company</code> og veldu rétt
+          fyrirtæki. Þetta hefur aðeins áhrif á virka spjallið ef þú
+          sendir kommandoið þar — til að gera breytinguna varanlega, sjá
+          <code>/origo-bc-setup</code>.</p>
+
+        <h3>„Unauthorized" frá MCP-þjóninum</h3>
+        <p>Auðkenning er útrunnin eða röng. Keyrðu
+          <code>/origo-bc-setup</code> aftur og sláðu inn nýja auðkenningu.</p>
+      </div>
+
+      <h2 id="versions">Útgáfur</h2>
+      <p>
+        Nýjasta slóðin hér að ofan er alltaf endurskrifuð við hverja
+        útgáfu. Ef þú vilt festa þig við tiltekna útgáfu (t.d. fyrir
+        rekjanleika), notaðu slóð á borð við:
+      </p>
+      <div class="url-row">
+        <a href="origo-bc-0.1.1.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin</a>
+      </div>
+      <p style="margin-top:10px;">
+        Útgáfunúmerið má finna í <code>plugin.json</code> og er skráð í
+        <a href="https://dev.azure.com/origo-bc-pte/BC-PTE-CloudEvents/_git/Origo%20BC%20Plugin?path=/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
+        í kóðasafninu.
+      </p>
+
+      <h2>Aðstoð</h2>
+      <p>
+        Hafðu samband við
+        <a href="mailto:mcp@origo.is">mcp@origo.is</a> ef þú finnur
+        villu eða þarft hjálp við tengingu. Hugbúnaðurinn er innri
+        þróun hjá Origo hf. og ekki opinn almenningi.
+      </p>
+
+    </div>
+
+    <!-- ============================================================= -->
+    <!--                        ENGLISH                                 -->
+    <!-- ============================================================= -->
+    <div data-lang="en">
+
+      <h2>What you get</h2>
+      <ul>
+        <li>An always-on rule (<code>bc-mcp-connection-rules</code>) that teaches Claude the Origo BC workflow — namespaces, connection formats, update rules.</li>
+        <li><code>/origo-bc-setup</code> — first-time connection wizard.</li>
+        <li><code>/origo-bc-add-env</code> — add additional BC tenants.</li>
+        <li><code>/origo-bc-list-environments</code> — list everything connected.</li>
+        <li><code>/origo-bc-switch-company</code> — change the default company.</li>
+      </ul>
+
+      <h2>Before you start</h2>
+      <div class="card">
+        <h3>Claude Cowork</h3>
+        <p>
+          Plugins only run in <strong>Cowork mode</strong> — not in the
+          regular Claude Desktop chat and not on claude.ai on the web.
+          Install Cowork from
+          <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>
+          and switch to Cowork.
+        </p>
+
+        <h3>Node.js 18 or newer</h3>
+        <p>
+          The connection runs through a small Node process bundled with
+          the plugin. Check your install:
+        </p>
+        <pre><code>node --version</code></pre>
+        <p>
+          If the command isn't found, grab the LTS build from
+          <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
+          and restart Cowork afterwards.
+        </p>
+      </div>
+
+      <h2>1. Download the plugin</h2>
+      <p>Use the button at the top, or copy the stable URL:</p>
+      <div class="url-row">
+        <a href="origo-bc.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin</a>
+      </div>
+      <p style="margin-top:10px;">
+        The file is ~20–40 KB and named <code>origo-bc.plugin</code>.
+      </p>
+
+      <h2>2. Install in Cowork</h2>
+      <p>Two ways — pick whichever is handier:</p>
+
+      <h3>Option A — drop into chat</h3>
+      <ol>
+        <li>Open any Cowork chat.</li>
+        <li>Drag <code>origo-bc.plugin</code> into the message box.</li>
+        <li><strong>Send the message</strong> (don't just cancel — you
+          need to hit <em>Send</em>).</li>
+        <li>Claude replies with an install card — click <em>Install</em>.</li>
+      </ol>
+
+      <h3>Option B — via Settings</h3>
+      <ol>
+        <li>In Cowork: <em>Settings &rarr; Plugins</em>.</li>
+        <li>Click <em>Install from file</em>.</li>
+        <li>Pick the <code>origo-bc.plugin</code> you downloaded.</li>
+        <li>Confirm the install.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>If no install card appears</strong>
+        Make sure you're in <em>Cowork mode</em>, not the regular Claude
+        Desktop chat. The window title should read "Cowork". Plain
+        Claude Desktop doesn't support plugin installs at all.
+      </div>
+
+      <h2>3. First connection</h2>
+      <p>Start a fresh chat and type:</p>
+      <pre><code>/origo-bc-setup</code></pre>
+      <p>The wizard asks for:</p>
+      <ol>
+        <li><strong>MCP URL</strong> — <code>https://dynamics.is/api/mcp</code> by default.</li>
+        <li><strong>Company name</strong> — as it appears in BC (e.g. <em>Origo hf.</em>).</li>
+        <li><strong>Credentials</strong> — Claude builds the correct connection blob for you.</li>
+      </ol>
+      <p>Once the environment is set up, you'll see <code>setup_origo_bc_environment</code> run and the MCP server appear in Claude's tool list.</p>
+
+      <h2>4. Adding more environments</h2>
+      <p>If you work across multiple BC companies:</p>
+      <pre><code>/origo-bc-add-env</code></pre>
+      <p>Each connection gets its own handle (e.g. <em>prod</em>, <em>test</em>, <em>cronus</em>) and you can switch between them without re-running setup.</p>
+
+      <h3>Change the default company</h3>
+      <pre><code>/origo-bc-switch-company</code></pre>
+
+      <h3>List everything connected</h3>
+      <pre><code>/origo-bc-list-environments</code></pre>
+
+      <h2>Troubleshooting</h2>
+      <div class="card">
+        <h3><code>node: command not found</code></h3>
+        <p>Node.js isn't on PATH. Install LTS from
+          <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
+          and restart Cowork.</p>
+
+        <h3>MCP tools don't show up</h3>
+        <p>Quit Cowork fully (tray icon &rarr; <em>Quit</em>) and relaunch.
+          MCP servers are only loaded at startup.</p>
+
+        <h3>Wrong company in answers</h3>
+        <p>Run <code>/origo-bc-switch-company</code> and pick the right
+          one. The change only affects the current chat unless you
+          rerun <code>/origo-bc-setup</code> to make it stick.</p>
+
+        <h3>"Unauthorized" from the MCP server</h3>
+        <p>Credentials expired or were wrong. Run
+          <code>/origo-bc-setup</code> again and paste fresh credentials.</p>
+      </div>
+
+      <h2 id="versions">Versions</h2>
+      <p>
+        The latest URL above is overwritten on every release. If you need
+        to pin a specific version (for reproducibility), use a URL like:
+      </p>
+      <div class="url-row">
+        <a href="origo-bc-0.1.1.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin</a>
+      </div>
+      <p style="margin-top:10px;">
+        Version numbers live in <code>plugin.json</code> and are tracked
+        in
+        <a href="https://dev.azure.com/origo-bc-pte/BC-PTE-CloudEvents/_git/Origo%20BC%20Plugin?path=/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
+        in the source repo.
+      </p>
+
+      <h2>Support</h2>
+      <p>
+        Reach
+        <a href="mailto:mcp@origo.is">mcp@origo.is</a> if you hit a bug
+        or need help connecting. The plugin is internal to Origo hf. and
+        not generally available.
+      </p>
+
+    </div>
+
+    <footer>
+      <p data-lang="is">
+        &copy; Origo hf. &middot; <a href="mailto:mcp@origo.is">mcp@origo.is</a> &middot;
+        <a href="https://dynamics.is" target="_blank" rel="noopener">dynamics.is</a>
+      </p>
+      <p data-lang="en">
+        &copy; Origo hf. &middot; <a href="mailto:mcp@origo.is">mcp@origo.is</a> &middot;
+        <a href="https://dynamics.is" target="_blank" rel="noopener">dynamics.is</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      function setLang(l) {
+        document.documentElement.lang = l;
+        document.querySelectorAll('.lang-toggle a').forEach(function (a) {
+          a.classList.toggle('active', a.dataset.setLang === l);
+        });
+      }
+      var initial = location.hash === '#en' ? 'en' : 'is';
+      setLang(initial);
+
+      document.querySelectorAll('.lang-toggle a').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          var l = a.dataset.setLang;
+          if (history.replaceState) {
+            history.replaceState(null, '', l === 'is' ? location.pathname : '#en');
+          } else {
+            location.hash = l === 'is' ? '' : 'en';
+          }
+          setLang(l);
+        });
+      });
+
+      window.addEventListener('hashchange', function () {
+        setLang(location.hash === '#en' ? 'en' : 'is');
+      });
+    })();
+  </script>
+</body>
+</html>

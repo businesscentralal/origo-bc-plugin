@@ -16,6 +16,16 @@ The plugin follows [semantic versioning](https://semver.org/).
 - Upload auth comes from the `CI Build Agent` variable group
   (`StorageBaseURL`, `StorageSasToken`).
 
+### Documentation
+
+- Bilingual (Icelandic / English) install guide at `docs/install.html`,
+  auto-uploaded to
+  <https://origopublic.blob.core.windows.net/resources/mcp/install.html>
+  on every build. Language toggle via `#en` hash. Designed as the one
+  URL to share with colleagues — contains prerequisites, install steps
+  for Cowork, first-time setup, multi-environment guidance, and a
+  troubleshooting section.
+
 ## [0.1.1] — 2026-04-21
 
 ### Added

@@ -27,6 +27,8 @@ artifact on every push to `main`.
 ├── scripts/
 │   ├── validate-plugin.sh        # syntax + structure checks
 │   └── build-plugin.sh           # produces origo-bc.plugin
+├── docs/
+│   └── install.html              # bilingual IS/EN install guide (blob-hosted)
 ├── azure-pipelines.yml           # CI definition
 ├── CHANGELOG.md
 ├── .gitignore
@@ -67,14 +69,17 @@ On every successful push to `main`, the pipeline also uploads the built
 plugin to the public Origo blob so colleagues can download it without
 needing Azure DevOps access:
 
-- **Latest** (always the newest release):
+- **Install guide (bilingual IS/EN)** — send this to colleagues:
+  <https://origopublic.blob.core.windows.net/resources/mcp/install.html>
+- **Latest plugin** (always the newest release):
   <https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin>
-- **Versioned** (immutable, one per version in `plugin.json`):
+- **Versioned plugin** (immutable, one per version in `plugin.json`):
   `https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-<version>.plugin`
 
 The upload step uses the `CI Build Agent` variable group in Azure DevOps
 (`StorageBaseURL` + `StorageSasToken`). The versioned copy is never
 overwritten — bump `version` in `plugin.json` to publish a new release.
+The install guide (`docs/install.html`) is overwritten each build.
 
 ## Cutting a release
 
