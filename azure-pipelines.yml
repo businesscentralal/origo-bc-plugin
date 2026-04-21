@@ -185,6 +185,68 @@ steps:
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
   # ---------------------------------------------------------------------
+  # Upload the marketplace manifest and the plugin source tree so the
+  # blob doubles as a Claude Code plugin marketplace. Consumers can then
+  # add it with a single command:
+  #
+  #   claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+  #   claude plugin install origo-bc@origo
+  #
+  # The `.plugin` file above still exists for manual drag-and-drop
+  # installs (Cowork path). This step is purely additive.
+  # ---------------------------------------------------------------------
+  - bash: |
+      set -euo pipefail
+
+      BASE="${STORAGE_BASE_URL%/}"
+      CONTAINER="$(BLOB_CONTAINER)"
+      PREFIX="$(BLOB_PREFIX)"
+      ACCOUNT=$(echo "$BASE" | sed -E 's#https?://([^.]+)\..*#\1#')
+
+      MARKETPLACE_URL="$BASE/$CONTAINER/$PREFIX/.claude-plugin/marketplace.json"
+      MARKETPLACE_ROOT="$BASE/$CONTAINER/$PREFIX"
+
+      echo "Uploading blob-hosted marketplace..."
+      echo "  root file: $MARKETPLACE_URL"
+
+      # Marketplace manifest (small, served with a short cache so updates
+      # propagate quickly).
+      az storage blob upload \
+        --account-name "$ACCOUNT" \
+        --container-name "$CONTAINER" \
+        --name "$PREFIX/.claude-plugin/marketplace.json" \
+        --file ".claude-plugin/marketplace.json" \
+        --sas-token "$STORAGE_SAS_TOKEN" \
+        --overwrite true \
+        --content-type "application/json; charset=utf-8" \
+        --content-cache-control "public, max-age=300" \
+        --only-show-errors
+
+      # Plugin source tree — Claude Code walks this relative to the
+      # marketplace.json location when it resolves `source: "./plugins/origo-bc"`.
+      echo "  source tree: $BASE/$CONTAINER/$PREFIX/plugins/origo-bc/**"
+      az storage blob upload-batch \
+        --account-name "$ACCOUNT" \
+        --destination "$CONTAINER" \
+        --destination-path "$PREFIX/plugins/origo-bc" \
+        --source "plugins/origo-bc" \
+        --sas-token "$STORAGE_SAS_TOKEN" \
+        --overwrite \
+        --only-show-errors
+
+      echo ""
+      echo "Done. Marketplace root: $MARKETPLACE_ROOT"
+      echo ""
+      echo "Consumers can add with:"
+      echo "  claude plugin marketplace add $MARKETPLACE_ROOT"
+      echo "  claude plugin install origo-bc@origo"
+    env:
+      STORAGE_BASE_URL: $(StorageBaseURL)
+      STORAGE_SAS_TOKEN: $(StorageSasToken)
+    displayName: Upload marketplace + plugin source to blob
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+  # ---------------------------------------------------------------------
   # Upload bilingual install guide (docs/install.html) to the same blob
   # path. Rendered directly in the browser at
   #   https://origopublic.blob.core.windows.net/resources/mcp/install.html

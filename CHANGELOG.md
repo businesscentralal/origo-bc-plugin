@@ -13,8 +13,25 @@ The plugin follows [semantic versioning](https://semver.org/).
     (latest, overwritten each build)
   - `https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-<version>.plugin`
     (versioned, immutable)
+- Pipeline also uploads the marketplace manifest and full plugin source
+  tree so the blob doubles as a Claude Code plugin marketplace:
+  - `.claude-plugin/marketplace.json`
+  - `plugins/origo-bc/**`
+  
+  Claude Code users can now install with:
+
+  ```
+  claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+  claude plugin install origo-bc@origo
+  ```
 - Upload auth comes from the `CI Build Agent` variable group
   (`StorageBaseURL`, `StorageSasToken`).
+
+### Distribution
+
+- Plugin is now publicly available — anyone using Business Central can
+  install, not just Origo staff. Install guide rewritten accordingly;
+  support contact remains <service@origo.is>.
 
 ### Documentation
 
@@ -22,9 +39,9 @@ The plugin follows [semantic versioning](https://semver.org/).
   auto-uploaded to
   <https://origopublic.blob.core.windows.net/resources/mcp/install.html>
   on every build. Language toggle via `#en` hash. Designed as the one
-  URL to share with colleagues — contains prerequisites, install steps
-  for Cowork, first-time setup, multi-environment guidance, and a
-  troubleshooting section.
+  URL to share externally — contains prerequisites, install steps for
+  Cowork (GUI) and Claude Code (CLI marketplace), first-time setup,
+  multi-environment guidance, and a troubleshooting section.
 
 ## [0.1.1] — 2026-04-21
 

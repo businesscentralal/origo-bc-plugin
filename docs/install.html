@@ -216,9 +216,9 @@
       <div data-lang="is">
         <h1>Tengdu Claude við Business Central</h1>
         <p class="lede">
-          <code>origo-bc</code> er Cowork-viðbót sem tengir Claude-spjall
-          við Origo Business Central MCP-þjón. Þessi síða er
-          uppsetningarleiðbeiningar fyrir samstarfsfólk.
+          <code>origo-bc</code> er viðbót fyrir Claude Cowork og Claude Code
+          sem tengir Claude við Origo Business Central MCP-þjón. Opið
+          öllum — veldu þá uppsetningarleið sem hentar tólinu þínu.
         </p>
         <a class="cta" href="origo-bc.plugin" download>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -233,9 +233,10 @@
       <div data-lang="en">
         <h1>Connect Claude to Business Central</h1>
         <p class="lede">
-          <code>origo-bc</code> is a Cowork plugin that wires Claude up
-          to the Origo Business Central MCP server. This page is the
-          install guide for colleagues.
+          <code>origo-bc</code> is a plugin for Claude Cowork and Claude
+          Code that wires Claude up to the Origo Business Central MCP
+          server. Open to everyone — pick the install path that matches
+          your tool.
         </p>
         <a class="cta" href="origo-bc.plugin" download>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -334,6 +335,27 @@
         URL-ið; (3) að þú hafir ýtt á <em>Send</em>, ekki bara hætt við.
       </div>
 
+      <h2>Valmöguleiki — Claude Code (CLI)</h2>
+      <p>
+        Notar þú <strong>Claude Code</strong> frá skipanaglugganum?
+        Þá þarftu ekki <code>.plugin</code>-skrána. Keyrðu þess í stað
+        tvær skipanir — Claude Code hleður origo-markaðstorginu beint
+        af Azure-blobbinum:
+      </p>
+      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+claude plugin install origo-bc@origo</code></pre>
+      <p>
+        Fyrri skipunin skráir <em>origo</em>-markaðstorgið (uppruna
+        plugin-a frá Origo). Seinni skipunin sækir nýjustu útgáfu af
+        <code>origo-bc</code> og setur hana upp í
+        <code>~/.claude/plugins/</code>. Endurræstu Claude Code til að
+        skilgreiningin hlaðist.
+      </p>
+      <p>
+        Til að uppfæra seinna: <code>claude plugin update origo-bc@origo</code>.
+        Til að fjarlægja: <code>claude plugin uninstall origo-bc</code>.
+      </p>
+
       <h2>3. Fyrsta tenging</h2>
       <p>Byrjaðu nýtt spjall og skrifaðu:</p>
       <pre><code>/origo-bc-setup</code></pre>
@@ -388,17 +410,17 @@
         <a href="origo-bc-0.1.1.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin</a>
       </div>
       <p style="margin-top:10px;">
-        Útgáfunúmerið má finna í <code>plugin.json</code> og er skráð í
-        <a href="https://dev.azure.com/origo-bc-pte/BC-PTE-CloudEvents/_git/Origo%20BC%20Plugin?path=/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
-        í kóðasafninu.
+        Útgáfunúmerið má finna í <code>plugin.json</code> innan
+        <code>origo-bc.plugin</code>-skrárinnar, og nýjasta útgáfan er
+        alltaf sú sem er hlaðin upp á slóðina efst á síðunni.
       </p>
 
       <h2>Aðstoð</h2>
       <p>
         Hafðu samband við
         <a href="mailto:service@origo.is">service@origo.is</a> ef þú finnur
-        villu eða þarft hjálp við tengingu. Hugbúnaðurinn er innri
-        þróun hjá Origo hf. og ekki opinn almenningi.
+        villu eða þarft hjálp við tengingu. Viðbótin er opinn hugbúnaður
+        frá Origo hf. og allir notendur Business Central mega nota hana.
       </p>
 
     </div>
@@ -488,6 +510,27 @@
         (3) you hit <em>Send</em> instead of cancelling.
       </div>
 
+      <h2>Alternative — Claude Code (CLI)</h2>
+      <p>
+        Using <strong>Claude Code</strong> from the terminal? You don't
+        need the <code>.plugin</code> file. Run two commands instead —
+        Claude Code pulls the origo marketplace straight from the Azure
+        blob:
+      </p>
+      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+claude plugin install origo-bc@origo</code></pre>
+      <p>
+        The first command registers the <em>origo</em> marketplace (the
+        source of Origo plugins). The second pulls the latest
+        <code>origo-bc</code> build and installs it into
+        <code>~/.claude/plugins/</code>. Restart Claude Code so the
+        definitions load.
+      </p>
+      <p>
+        To update later: <code>claude plugin update origo-bc@origo</code>.
+        To remove: <code>claude plugin uninstall origo-bc</code>.
+      </p>
+
       <h2>3. First connection</h2>
       <p>Start a fresh chat and type:</p>
       <pre><code>/origo-bc-setup</code></pre>
@@ -540,18 +583,17 @@
         <a href="origo-bc-0.1.1.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin</a>
       </div>
       <p style="margin-top:10px;">
-        Version numbers live in <code>plugin.json</code> and are tracked
-        in
-        <a href="https://dev.azure.com/origo-bc-pte/BC-PTE-CloudEvents/_git/Origo%20BC%20Plugin?path=/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
-        in the source repo.
+        Version numbers live in <code>plugin.json</code> inside the
+        <code>origo-bc.plugin</code> file — whatever is linked at the top
+        of this page is always the latest release.
       </p>
 
       <h2>Support</h2>
       <p>
         Reach
         <a href="mailto:service@origo.is">service@origo.is</a> if you hit a bug
-        or need help connecting. The plugin is internal to Origo hf. and
-        not generally available.
+        or need help connecting. The plugin is published by Origo hf.
+        and is free for anyone using Business Central.
       </p>
 
     </div>

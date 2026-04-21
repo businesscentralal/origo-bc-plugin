@@ -63,23 +63,29 @@ Published artifact: **`origo-bc-plugin`** (contains `origo-bc.plugin`).
 Download from the pipeline run page in Azure DevOps under **Artifacts →
 origo-bc-plugin**.
 
-## Stable download URLs (public)
+## Stable public URLs
 
-On every successful push to `main`, the pipeline also uploads the built
-plugin to the public Origo blob so colleagues can download it without
-needing Azure DevOps access:
+On every successful push to `main`, the pipeline publishes the plugin
+(and the marketplace manifest) to the public Origo blob so anyone —
+inside or outside Origo — can install without needing Azure DevOps
+access:
 
-- **Install guide (bilingual IS/EN)** — send this to colleagues:
+- **Install guide (bilingual IS/EN)** — the public-facing page:
   <https://origopublic.blob.core.windows.net/resources/mcp/install.html>
-- **Latest plugin** (always the newest release):
+- **Marketplace root** — for Claude Code users (see below):
+  <https://origopublic.blob.core.windows.net/resources/mcp>
+- **Marketplace manifest** (direct link, rarely needed):
+  <https://origopublic.blob.core.windows.net/resources/mcp/.claude-plugin/marketplace.json>
+- **Latest plugin file** (for Cowork's drag-and-drop install):
   <https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin>
 - **Versioned plugin** (immutable, one per version in `plugin.json`):
   `https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-<version>.plugin`
 
 The upload step uses the `CI Build Agent` variable group in Azure DevOps
-(`StorageBaseURL` + `StorageSasToken`). The versioned copy is never
-overwritten — bump `version` in `plugin.json` to publish a new release.
-The install guide (`docs/install.html`) is overwritten each build.
+(`StorageBaseURL` + `StorageSasToken`). The versioned `.plugin` copy is
+never overwritten — bump `version` in `plugin.json` to publish a new
+release. The install guide, marketplace manifest, and plugin source tree
+are overwritten on every build.
 
 ## Cutting a release
 
@@ -92,39 +98,48 @@ The install guide (`docs/install.html`) is overwritten each build.
 
 ## Installing the produced plugin
 
-Colleagues can either download straight from the stable URL:
+Two supported paths. Point end-users at the install guide at
+<https://origopublic.blob.core.windows.net/resources/mcp/install.html>
+rather than this README — it walks through both paths in Icelandic and
+English.
+
+### Cowork (GUI) — download and drop
+
+Download the `.plugin` file from the stable URL:
 
 ```
 https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin
 ```
 
-…or grab a specific version:
+…or pin a specific version:
 
 ```
 https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin
 ```
 
-Then install it:
+Then:
 
 - **Cowork:** Settings → Plugins → Install from file → pick
   `origo-bc.plugin`. Or drop the file into a chat and send; the install
   card appears on the sent message.
-- **Claude Code (CLI):** `claude plugin install origo-bc.plugin`.
-- **Claude Desktop (regular chat app):** **not supported** — Claude
-  Desktop has no plugin installer. Use Cowork or Code, or edit
-  `claude_desktop_config.json` by hand.
 
-## Adding the whole marketplace (future)
+### Claude Code (CLI) — marketplace install
 
-Once this repo is pushed to Azure DevOps, Cowork users can add it as a
-marketplace with:
+Claude Code reads the marketplace manifest directly off the blob and
+resolves the plugin source without needing the `.plugin` zip:
 
 ```
-/plugin marketplace add https://dev.azure.com/<org>/<project>/_git/origo-bc-plugin
+claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+claude plugin install origo-bc@origo
 ```
 
-(Depends on the Cowork version; some builds only accept GitHub URLs —
-verify before publishing this instruction to colleagues.)
+To update later: `claude plugin update origo-bc@origo`.
+To remove: `claude plugin uninstall origo-bc`.
+
+### Claude Desktop (regular chat app)
+
+**Not supported** — Claude Desktop has no plugin installer. Use Cowork
+or Claude Code, or edit `claude_desktop_config.json` by hand.
 
 ## Contact
 
