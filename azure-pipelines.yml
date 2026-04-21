@@ -62,7 +62,10 @@ name: $(Date:yyyyMMdd).$(Rev:r)_$(Build.SourceVersion)
 
 steps:
   - checkout: self
-    fetchDepth: '1'
+    # Full history (fetchDepth: 0) so the "Mirror main to public GitHub
+    # repo" step at the end of the pipeline can push complete history
+    # without needing to re-authenticate against Azure DevOps mid-job.
+    # The repo is small (< 1 MB) so the overhead is negligible.
     displayName: Checkout repository
 
   - task: NodeTool@0
@@ -319,12 +322,9 @@ steps:
 
       echo "Mirror target: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}"
 
-      # Azure Pipelines checks out shallow by default. Unshallow so the
-      # mirror push carries full history.
-      if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
-        echo "Unshallowing local clone..."
-        git fetch --unshallow origin
-      fi
+      # The checkout step at the top of the pipeline uses fetchDepth: 0,
+      # so we already have full history here — no need to unshallow (and
+      # no ambient creds to do so mid-job anyway).
 
       # Identity is only needed if we were to create commits (we aren't),
       # but git warns without it on some agents.
