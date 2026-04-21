@@ -278,6 +278,8 @@
           &nbsp;&middot;&nbsp;
           <a href="#code">Code</a>
           &nbsp;&middot;&nbsp;
+          <a href="#entra">Entra skráning</a>
+          &nbsp;&middot;&nbsp;
           <a href="#versions">Útgáfur</a>
         </p>
       </div>
@@ -296,6 +298,8 @@
           <a href="#cowork">Cowork</a>
           &nbsp;&middot;&nbsp;
           <a href="#code">Code</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#entra">Entra app</a>
           &nbsp;&middot;&nbsp;
           <a href="#versions">Versions</a>
         </p>
@@ -474,16 +478,219 @@ claude plugin install origo-bc@origo</code></pre>
       </p>
 
       <!-- ============================ SAMEIGINLEGT ============================ -->
+      <h2 id="entra">Forkrafa — Entra App Registration</h2>
+      <p>
+        MCP-þjónninn á <code>dynamics.is/api/mcp</code> auðkennir sig
+        með <strong>Microsoft Entra-skráningu</strong> (áður Azure AD).
+        Þú þarft þrjú gildi áður en þú keyrir
+        <code>/origo-bc-setup</code>: <em>Tenant ID</em>, <em>Client ID</em>
+        og <em>Client Secret</em>. Skráninguna þarf líka að tengja inn í
+        BC sem <em>Microsoft Entra Application</em> með réttum
+        heimildarsamstæðum.
+      </p>
+
+      <h3>1. Azure-hliðin — búa til app-skráningu</h3>
+      <p>
+        Við fylgjum staðalmynstri Microsoft fyrir
+        „Business Central Web Service Client" — sami grunnur og
+        Microsoft notar í eigin dæmum. Uppsetningin styður bæði
+        <em>innskráningarflæði</em> (delegated, fyrir notanda við
+        lyklaborðið) og <em>ósjálfvirkt flæði</em> (app-only /
+        client-credentials, fyrir MCP-þjóninn).
+      </p>
+
+      <p><strong>1a. Nýskrá app</strong></p>
+      <ol>
+        <li>Farðu inn í
+          <a href="https://portal.azure.com/" target="_blank" rel="noopener">portal.azure.com</a>
+          → <em>Microsoft Entra ID</em> → <em>App registrations</em> →
+          <em>New registration</em>.</li>
+        <li><strong>Name</strong>:
+          <code>Business Central Web Service Client</code>
+          — eða <code>&lt;fyrirtæki&gt; BC — Claude</code> ef þú vilt
+          merkja við sérstakt umhverfi.</li>
+        <li><strong>Supported account types</strong>: bæði virka —
+          <em>Accounts in this organizational directory only (Single
+          tenant)</em> er einfaldast og duglegt þegar appið þjónar
+          aðeins eigið fyrirtæki. <em>Accounts in any organizational
+          directory (Multitenant)</em> er gagnlegt ef sama skráning á
+          að gilda yfir mörg umhverfi eða hjá þjónustuaðila. Dæmið sem
+          við vísum í notar <code>AzureADMultipleOrgs</code>, en
+          <em>single-tenant</em> virkar alveg eins fyrir flesta.</li>
+        <li><strong>Redirect URI</strong>: veldu
+          <em>Public client/native (mobile &amp; desktop)</em> og sláðu
+          inn:
+          <pre><code>https://businesscentral.dynamics.com/OAuthLanding.htm</code></pre>
+        </li>
+        <li>Smelltu á <em>Register</em>.</li>
+      </ol>
+
+      <p><strong>1b. Authentication — leyfa public client flows</strong></p>
+      <ol>
+        <li>Opnaðu <em>Authentication</em>-flipann á nýja app-inu.</li>
+        <li>Neðst, undir <em>Advanced settings</em>:
+          <strong>Allow public client flows</strong> → <em>Yes</em>.</li>
+        <li>Smelltu á <em>Save</em>.</li>
+      </ol>
+
+      <p><strong>1c. API permissions — fjórar heimildir</strong></p>
+      <p>
+        Í <em>API permissions</em>-flipanum smellirðu á
+        <em>Add a permission</em> og bætir við öllum fjórum hér að
+        neðan. Þrjár eru <em>Delegated</em> (í nafni notanda), ein er
+        <em>Application</em> (app-only — <strong>skilyrði fyrir
+        MCP-þjóninn</strong>).
+      </p>
+
+      <div class="card">
+        <p style="margin:0 0 8px;"><strong>Microsoft Graph</strong></p>
+        <ul style="margin-top:0;">
+          <li><code>User.Read</code> — Delegated.</li>
+        </ul>
+        <p style="margin:12px 0 8px;"><strong>Dynamics 365 Business Central</strong></p>
+        <ul style="margin-top:0;">
+          <li><code>Financials.ReadWrite.All</code> — Delegated (les/skrifa BC-gögn í nafni notanda).</li>
+          <li><code>user_impersonation</code> — Delegated (stöðluð BC-beinisaðganga).</li>
+          <li><code>app_access</code> — <strong>Application</strong> (ósjálfvirkur aðgangur, MCP-þjónninn).</li>
+        </ul>
+      </div>
+
+      <ol>
+        <li>Þegar allar fjórar eru komnar í listann, smelltu á
+          <em>Grant admin consent for &lt;leigjandi&gt;</em> og
+          staðfestu. <em>Status</em>-dálkurinn á að sýna græna
+          gátmerkingu fyrir allar heimildirnar.</li>
+      </ol>
+
+      <p><strong>1d. Certificates &amp; secrets — nýtt client secret</strong></p>
+      <ol>
+        <li><em>Certificates &amp; secrets</em> →
+          <em>Client secrets</em> → <em>New client secret</em>.</li>
+        <li><strong>Description</strong>: notaðu nafnavenju sem segir
+          hver bjó lykilinn til og á hvaða tíma (t.d.
+          <code>ORI1058</code> fylgir Origo-innri mynstri). Hjálpar
+          þegar þarf að skipta út lykli seinna.</li>
+        <li><strong>Expires</strong>: mælt með 12–24 mánuðum (Azure
+          leyfir ekki meira en 24).</li>
+        <li>Smelltu á <em>Add</em>. <strong>Afritaðu gildið strax</strong>
+          — það birtist ekki aftur, aðeins <em>hint</em> (t.d.
+          <code>Z26…</code>) og <em>Secret ID</em>.</li>
+      </ol>
+
+      <p><strong>1e. Afrita það sem þú þarft</strong></p>
+      <p>
+        Fyrir <code>/origo-bc-setup</code> þarftu þrjú gildi — afritaðu
+        þau úr Azure:
+      </p>
+      <ul>
+        <li><strong>Tenant ID</strong> — <em>Overview</em> →
+          <em>Directory (tenant) ID</em>.</li>
+        <li><strong>Client ID</strong> — <em>Overview</em> →
+          <em>Application (client) ID</em>.</li>
+        <li><strong>Client Secret</strong> — gildið úr skrefi 1d
+          (<em>ekki</em> <em>Secret ID</em>).</li>
+      </ul>
+
+      <div class="callout">
+        <strong>Ekki deila client-secret-inu</strong>
+        Geymdu gildið á öruggum stað (password manager). Ef það týnist
+        skaltu búa til nýtt — það er ekki hægt að birta gamalt aftur.
+      </div>
+
+      <div class="callout">
+        <strong>Lágmarksútgáfan (aðeins MCP)</strong>
+        Ef þú notar appið einungis fyrir Claude MCP-tengingu (aldrei
+        fyrir innskráðan notanda), dugar einn permission:
+        <code>app_access</code> (Application). Redirect URI og
+        <em>Allow public client flows</em> eru þá heldur ekki
+        nauðsynleg — en það er samt þægilegt að hafa þau með strax svo
+        sama skráning virki líka fyrir interactive tól (t.d. BC-appið
+        sjálft) síðar.
+      </div>
+
+      <h3>2. BC-hliðin — skrá appið og gefa heimildir</h3>
+      <ol>
+        <li>Opnaðu Business Central sem kennitölunotandi með
+          kerfisstjóraheimildir.</li>
+        <li>Leitaðu (Alt+Q) að <em>Microsoft Entra Applications</em> og
+          opnaðu síðuna.</li>
+        <li><em>New</em> → nýtt spjaldið lítur út eins og skjámyndin hér
+          að neðan:</li>
+      </ol>
+      <div class="card">
+        <p style="margin:0;"><strong>General</strong></p>
+        <ul style="margin-top:6px;">
+          <li><strong>Client ID</strong>: líma <em>Application (client) ID</em> úr Azure.</li>
+          <li><strong>Description</strong>: stutt heiti (t.d. <code>Cloud Events Tests</code>).</li>
+          <li><strong>State</strong>: <em>Enabled</em>.</li>
+        </ul>
+      </div>
+      <ol start="4">
+        <li>Í flipanum <em>User Permission Sets</em> bætir þú við
+          <strong>a.m.k.</strong> eftirfarandi samstæðum:</li>
+      </ol>
+      <div class="card">
+        <p style="margin:0 0 6px;"><strong>Lágmarksheimildir</strong></p>
+        <ul style="margin-top:0;">
+          <li><code>CLOUD EVENTS API</code> — <em>Cloud Events Base</em> /
+            <em>System</em>. <strong>Skylda.</strong> Þetta er samstæðan
+            sem gefur Claude aðgang að Cloud Events endapunktunum og
+            MCP-tólinu sjálfu.</li>
+          <li><code>D365 BASIC</code> — <em>Base Application</em> /
+            <em>System</em>. Grunnaðgangur að BC (lestur á yfirlitum,
+            tenglum, númeraröðum).</li>
+        </ul>
+        <p style="margin:12px 0 6px;"><strong>Gagnaheimildir</strong> (veldu eftir notkun)</p>
+        <ul style="margin-top:0;">
+          <li><code>SUPER (DATA)</code> — <em>System Application</em> /
+            <em>System</em>. Fullur aðgangur að BC-gögnum.
+            <em>Einfaldast að setja upp, en mjög gjafmilt — ekki nota
+            fyrir utanaðkomandi aðila.</em></li>
+          <li>Eða sérsniðnar samstæður: t.d. <code>D365 READ</code>
+            + <code>D365 SALES</code> ef Claude á bara að lesa og
+            skoða sölur; <code>D365 FIN</code> fyrir fjármálavinnslur;
+            o.s.frv.</li>
+        </ul>
+        <p style="margin-bottom:0; font-size:13px; color:var(--muted);">
+          Heimildirnar sem þú bætir við hér stjórna hvaða gögnum Claude
+          getur séð og breytt í <em>þessu tiltekna fyrirtæki</em>. Að
+          breyta þeim seinna krefst þess að <em>State</em> sé sett á
+          <em>Disabled</em> fyrst.
+        </p>
+      </div>
+
+      <h3>3. Veita samþykki (Grant Consent)</h3>
+      <ol>
+        <li>Á Entra Application-spjaldinu smellirðu á
+          <em>Grant Consent</em> (efst).</li>
+        <li>BC beinir þér yfir á Microsoft-innskráningu — skráðu þig
+          inn sem kerfisstjóri leigjandans (tenant admin) og samþykktu.</li>
+        <li>Ef samþykki tekst snýrðu aftur í BC með
+          „Consent granted"-skilaboðum. Appið er núna tilbúið.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>Prófunar- vs. framleiðsluumhverfi</strong>
+        Búðu til aðskilda Entra-skráningu fyrir hvert umhverfi (t.d.
+        <em>cronus</em>, <em>prod</em>) og aðskildar
+        <em>Entra Application</em>-færslur í BC. Þú getur síðan tengt
+        þau í Claude í gegnum <code>/origo-bc-add-env</code> og skipt á
+        milli án þess að blanda saman leyfum.
+      </div>
+
       <h2>Fyrsta tenging (bæði Cowork og Code)</h2>
       <p>Byrjaðu nýtt spjall / sessjón og skrifaðu:</p>
       <pre><code>/origo-bc-setup</code></pre>
       <p>Aðstoðarmaðurinn spyr þig um:</p>
       <ol>
         <li><strong>MCP-slóð</strong> — <code>https://dynamics.is/api/mcp</code> er sjálfgefið.</li>
-        <li><strong>Fyrirtækisnafn</strong> — eins og það birtist í BC (t.d. <em>Origo hf.</em>).</li>
-        <li><strong>Sjálfgefna auðkenninguna</strong> — Claude setur upp rétt format fyrir þig.</li>
+        <li><strong>Tenant ID</strong> — <em>Directory (tenant) ID</em> úr Azure.</li>
+        <li><strong>Client ID</strong> — <em>Application (client) ID</em> úr Azure.</li>
+        <li><strong>Client Secret</strong> — gildið sem þú afritaðir í skrefi 1.</li>
+        <li><strong>Environment</strong> — <em>Production</em>, <em>Sandbox</em>, eða nafn á sérsandkassa (t.d. <em>cronus</em>).</li>
+        <li><strong>Fyrirtækisnafn</strong> — eins og það birtist í BC.</li>
       </ol>
-      <p>Þegar stofnunin er tilbúin sérðu <code>setup_origo_bc_environment</code> keyrt og MCP-þjónninn birtist í tólalista Claude.</p>
+      <p>Claude byggir síðan rétt auðkenningarsnið (<code>plain:&lt;base64&gt;</code> á flestum kerfum, DPAPI-vafið á Windows) og keyrir <code>setup_origo_bc_environment</code>. MCP-þjónninn birtist í tólalista Claude.</p>
 
       <h2>Bæta við fleiri umhverfum</h2>
       <p>Ef þú vinnur með fleira en eitt BC-fyrirtæki:</p>
@@ -712,16 +919,219 @@ claude plugin install origo-bc@origo</code></pre>
       </p>
 
       <!-- ============================ SHARED ============================ -->
+      <h2 id="entra">Prerequisite — Entra App Registration</h2>
+      <p>
+        The MCP server at <code>dynamics.is/api/mcp</code> authenticates
+        against <strong>Microsoft Entra</strong> (formerly Azure AD).
+        Before you run <code>/origo-bc-setup</code> you need three
+        values: <em>Tenant ID</em>, <em>Client ID</em>, and
+        <em>Client Secret</em>. You also need to register the app
+        <em>inside BC</em> as a Microsoft Entra Application with the
+        right permission sets.
+      </p>
+
+      <h3>1. Azure side — create the app registration</h3>
+      <p>
+        We follow Microsoft's standard template for a
+        "Business Central Web Service Client" — the same baseline
+        Microsoft uses in their own samples. The registration supports
+        both <em>delegated</em> (a signed-in user) and <em>app-only /
+        client-credentials</em> (the MCP server running unattended).
+      </p>
+
+      <p><strong>1a. Register a new app</strong></p>
+      <ol>
+        <li>Open
+          <a href="https://portal.azure.com/" target="_blank" rel="noopener">portal.azure.com</a>
+          → <em>Microsoft Entra ID</em> → <em>App registrations</em> →
+          <em>New registration</em>.</li>
+        <li><strong>Name</strong>:
+          <code>Business Central Web Service Client</code>
+          — or <code>&lt;company&gt; BC — Claude</code> if you want to
+          tag a specific environment.</li>
+        <li><strong>Supported account types</strong>: either works —
+          <em>Accounts in this organizational directory only (Single
+          tenant)</em> is the simplest choice when the app only serves
+          your own organization. <em>Accounts in any organizational
+          directory (Multitenant)</em> is useful if the same
+          registration should serve multiple environments or a service
+          provider's customers. The reference example uses
+          <code>AzureADMultipleOrgs</code>, but <em>single-tenant</em>
+          is fine for most installations.</li>
+        <li><strong>Redirect URI</strong>: pick
+          <em>Public client/native (mobile &amp; desktop)</em> and
+          enter:
+          <pre><code>https://businesscentral.dynamics.com/OAuthLanding.htm</code></pre>
+        </li>
+        <li>Click <em>Register</em>.</li>
+      </ol>
+
+      <p><strong>1b. Authentication — allow public client flows</strong></p>
+      <ol>
+        <li>On the new app, open the <em>Authentication</em> tab.</li>
+        <li>At the bottom, under <em>Advanced settings</em>:
+          <strong>Allow public client flows</strong> → <em>Yes</em>.</li>
+        <li>Click <em>Save</em>.</li>
+      </ol>
+
+      <p><strong>1c. API permissions — four permissions</strong></p>
+      <p>
+        In the <em>API permissions</em> tab click
+        <em>Add a permission</em> and add all four below. Three are
+        <em>Delegated</em> (on behalf of the signed-in user), one is
+        <em>Application</em> (app-only — <strong>required for the MCP
+        server</strong>).
+      </p>
+
+      <div class="card">
+        <p style="margin:0 0 8px;"><strong>Microsoft Graph</strong></p>
+        <ul style="margin-top:0;">
+          <li><code>User.Read</code> — Delegated.</li>
+        </ul>
+        <p style="margin:12px 0 8px;"><strong>Dynamics 365 Business Central</strong></p>
+        <ul style="margin-top:0;">
+          <li><code>Financials.ReadWrite.All</code> — Delegated (read/write BC data on the user's behalf).</li>
+          <li><code>user_impersonation</code> — Delegated (the stock BC access-as-user scope).</li>
+          <li><code>app_access</code> — <strong>Application</strong> (unattended access, used by the MCP server).</li>
+        </ul>
+      </div>
+
+      <ol>
+        <li>Once all four show in the list, click
+          <em>Grant admin consent for &lt;tenant&gt;</em> and confirm.
+          The <em>Status</em> column should turn to a green checkmark
+          for every permission.</li>
+      </ol>
+
+      <p><strong>1d. Certificates &amp; secrets — create a client secret</strong></p>
+      <ol>
+        <li><em>Certificates &amp; secrets</em> →
+          <em>Client secrets</em> → <em>New client secret</em>.</li>
+        <li><strong>Description</strong>: use a naming convention so
+          you know who created the secret and when (e.g.
+          <code>ORI1058</code> follows Origo's internal pattern).
+          Makes it easier to rotate later.</li>
+        <li><strong>Expires</strong>: 12–24 months recommended (Azure
+          caps at 24).</li>
+        <li>Click <em>Add</em>. <strong>Copy the value
+          immediately</strong> — only a <em>hint</em> (e.g.
+          <code>Z26…</code>) and the <em>Secret ID</em> remain visible
+          afterwards.</li>
+      </ol>
+
+      <p><strong>1e. Copy the values you need</strong></p>
+      <p>
+        For <code>/origo-bc-setup</code> you need three values. Grab
+        them from Azure:
+      </p>
+      <ul>
+        <li><strong>Tenant ID</strong> — <em>Overview</em> →
+          <em>Directory (tenant) ID</em>.</li>
+        <li><strong>Client ID</strong> — <em>Overview</em> →
+          <em>Application (client) ID</em>.</li>
+        <li><strong>Client Secret</strong> — the value from step 1d
+          (<em>not</em> the <em>Secret ID</em>).</li>
+      </ul>
+
+      <div class="callout">
+        <strong>Don't share the client secret</strong>
+        Keep the value in a password manager. If it's lost, generate a
+        new one — old values can't be displayed again.
+      </div>
+
+      <div class="callout">
+        <strong>Minimal version (MCP only)</strong>
+        If you only use this app for the Claude MCP connection (never
+        for a signed-in user), a single permission is enough:
+        <code>app_access</code> (Application). The redirect URI and
+        <em>Allow public client flows</em> aren't strictly needed in
+        that case either — but it's handy to add them up front so the
+        same registration can be reused by interactive tools (the BC
+        app itself, etc.) later.
+      </div>
+
+      <h3>2. BC side — register the app and grant permissions</h3>
+      <ol>
+        <li>Open Business Central signed in as an admin user.</li>
+        <li>Search (Alt+Q) for <em>Microsoft Entra Applications</em>
+          and open the page.</li>
+        <li><em>New</em> → the new card looks like this:</li>
+      </ol>
+      <div class="card">
+        <p style="margin:0;"><strong>General</strong></p>
+        <ul style="margin-top:6px;">
+          <li><strong>Client ID</strong>: paste the
+            <em>Application (client) ID</em> from Azure.</li>
+          <li><strong>Description</strong>: a short name (e.g.
+            <code>Cloud Events Tests</code>).</li>
+          <li><strong>State</strong>: <em>Enabled</em>.</li>
+        </ul>
+      </div>
+      <ol start="4">
+        <li>On the <em>User Permission Sets</em> tab add, at minimum,
+          the following:</li>
+      </ol>
+      <div class="card">
+        <p style="margin:0 0 6px;"><strong>Minimum permissions</strong></p>
+        <ul style="margin-top:0;">
+          <li><code>CLOUD EVENTS API</code> — <em>Cloud Events Base</em>
+            / <em>System</em>. <strong>Required.</strong> This is the
+            permission set that grants Claude access to the Cloud Events
+            endpoints and the MCP tooling itself.</li>
+          <li><code>D365 BASIC</code> — <em>Base Application</em> /
+            <em>System</em>. Baseline BC access (reading lists, links,
+            number series).</li>
+        </ul>
+        <p style="margin:12px 0 6px;"><strong>Data permissions</strong> (pick based on use)</p>
+        <ul style="margin-top:0;">
+          <li><code>SUPER (DATA)</code> — <em>System Application</em> /
+            <em>System</em>. Full access to BC data.
+            <em>Easiest setup, but very generous — don't use for third
+            parties.</em></li>
+          <li>Or scoped sets: e.g. <code>D365 READ</code> +
+            <code>D365 SALES</code> for read-only sales review;
+            <code>D365 FIN</code> for finance workflows; etc.</li>
+        </ul>
+        <p style="margin-bottom:0; font-size:13px; color:var(--muted);">
+          The permissions you attach here control what Claude can see
+          and change in <em>this particular company</em>. Changing them
+          later requires setting <em>State</em> back to
+          <em>Disabled</em> first.
+        </p>
+      </div>
+
+      <h3>3. Grant consent</h3>
+      <ol>
+        <li>On the Entra Application card, click
+          <em>Grant Consent</em> (top bar).</li>
+        <li>BC redirects you to Microsoft — sign in as a tenant admin
+          and approve.</li>
+        <li>On success you're returned to BC with a "Consent granted"
+          message. The app is now ready.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>Separate registrations per environment</strong>
+        Create a distinct Entra app (and BC <em>Entra Application</em>
+        record) for each environment — e.g. <em>cronus</em>,
+        <em>prod</em>. You can then register each one in Claude via
+        <code>/origo-bc-add-env</code> and switch between them without
+        mixing permissions.
+      </div>
+
       <h2>First connection (both Cowork and Code)</h2>
       <p>Start a fresh chat / session and type:</p>
       <pre><code>/origo-bc-setup</code></pre>
       <p>The wizard asks for:</p>
       <ol>
         <li><strong>MCP URL</strong> — <code>https://dynamics.is/api/mcp</code> by default.</li>
-        <li><strong>Company name</strong> — as it appears in BC (e.g. <em>Origo hf.</em>).</li>
-        <li><strong>Credentials</strong> — Claude builds the correct connection blob for you.</li>
+        <li><strong>Tenant ID</strong> — <em>Directory (tenant) ID</em> from Azure.</li>
+        <li><strong>Client ID</strong> — <em>Application (client) ID</em> from Azure.</li>
+        <li><strong>Client Secret</strong> — the value you copied in step 1.</li>
+        <li><strong>Environment</strong> — <em>Production</em>, <em>Sandbox</em>, or a named sandbox (e.g. <em>cronus</em>).</li>
+        <li><strong>Company name</strong> — as it appears in BC.</li>
       </ol>
-      <p>Once the environment is set up, you'll see <code>setup_origo_bc_environment</code> run and the MCP server appear in Claude's tool list.</p>
+      <p>Claude then builds the correct connection blob (<code>plain:&lt;base64&gt;</code> on most systems, DPAPI-wrapped on Windows) and runs <code>setup_origo_bc_environment</code>. The MCP server appears in Claude's tool list.</p>
 
       <h2>Adding more environments</h2>
       <p>If you work across multiple BC companies:</p>

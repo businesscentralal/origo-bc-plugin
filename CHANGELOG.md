@@ -50,6 +50,28 @@ The plugin follows [semantic versioning](https://semver.org/).
   (<https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md>)
   and explains that Claude loads it automatically through the
   remote-loader entry in MCP-Skills once BC is connected.
+- New prerequisite section *Entra App Registration* walks through:
+  (1) creating the app in Azure portal (Entra ID → App registrations),
+  copying Tenant ID / Client ID, generating a client secret;
+  (2) registering the same app in BC under *Microsoft Entra
+  Applications* with the required **CLOUD EVENTS API** permission set
+  plus baseline BC data permissions (`D365 BASIC`, `SUPER (DATA)`, or
+  scoped alternatives); (3) granting admin consent. Separate
+  registrations per environment are recommended.
+- Azure-side instructions now match the Microsoft
+  "Business Central Web Service Client" reference template:
+  single-tenant or multitenant (`AzureADMultipleOrgs`) — both work,
+  pick whichever fits; public-client redirect URI
+  `https://businesscentral.dynamics.com/OAuthLanding.htm`,
+  *Allow public client flows = Yes*, and four API permissions —
+  `User.Read` (Microsoft Graph, delegated) plus
+  `Financials.ReadWrite.All`, `user_impersonation` (both delegated)
+  and `app_access` (application) on Dynamics 365 Business Central.
+  Client-secret naming convention (`ORI<nnnn>`) and expiry guidance
+  included. Minimal-setup callout flags that `app_access` alone
+  suffices for MCP-only use.
+- `/origo-bc-setup` input list extended to match reality: Tenant ID,
+  Client ID, Client Secret, environment name, company name.
 
 ## [0.1.1] — 2026-04-21
 
