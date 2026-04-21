@@ -66,6 +66,7 @@ steps:
     # repo" step at the end of the pipeline can push complete history
     # without needing to re-authenticate against Azure DevOps mid-job.
     # The repo is small (< 1 MB) so the overhead is negligible.
+    fetchDepth: '0'
     displayName: Checkout repository
 
   - task: NodeTool@0
