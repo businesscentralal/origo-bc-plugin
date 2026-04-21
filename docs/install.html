@@ -351,7 +351,7 @@
 
       <h2>Hvað þú færð</h2>
       <ul>
-        <li>Sjálfvirk regla (<code>bc-mcp-connection-rules</code>) sem kennir Claude vinnuflæðið hjá Origo — nafnrými, tengiforrit, uppfærslureglur.</li>
+        <li>Sjálfvirk regla (<code>origo-bc-accounting</code>) sem kennir Claude vinnuflæðið hjá Origo — nafnrými, tengiforrit, uppfærslureglur.</li>
         <li><code>/origo-bc-setup</code> — fyrsti tengingaraðstoðarmaður.</li>
         <li><code>/origo-bc-add-env</code> — bætir við fleiri BC-umhverfum.</li>
         <li><code>/origo-bc-list-environments</code> — birtir öll tengd umhverfi.</li>
@@ -439,9 +439,42 @@
       <h2 id="code">Ef þú ert í Code</h2>
       <p>
         Claude Code (CLI-hamurinn) notar ekki
-        <code>.plugin</code>-skrá. Keyrðu þess í stað tvær skipanir í
-        skipanaglugga — Code hleður <em>origo</em>-markaðstorginu beint
-        af opinberu GitHub-repo-inu okkar:
+        <code>.plugin</code>-skrá. Fyrst þarftu að setja upp
+        <code>claude</code> CLI-tólið sjálft, og keyra síðan tvær
+        skipanir til að bæta við origo-bc.
+      </p>
+
+      <h3>1. Setja upp Claude Code CLI</h3>
+      <p>
+        Ef þú ert ekki með <code>claude</code> skipunina á PATH,
+        settu hana upp fyrst:
+      </p>
+
+      <p><strong>macOS</strong></p>
+      <pre><code># Leið A — Homebrew (mælt með)
+brew install claude
+
+# Leið B — npm
+npm install -g @anthropic-ai/claude-code</code></pre>
+
+      <p><strong>Windows</strong></p>
+      <pre><code># npm (krefst Node.js 18+)
+npm install -g @anthropic-ai/claude-code</code></pre>
+
+      <p>
+        Staðfestu uppsetningu:
+      </p>
+      <pre><code>claude --version</code></pre>
+      <p class="small">
+        Ef skipunin finnst ekki, lokaðu og opnaðu skipanagluggann
+        aftur (eða endurræstu VS Code) svo PATH-breytan uppfærist.
+      </p>
+
+      <h3>2. Bæta við origo-bc plugin</h3>
+      <p>
+        Keyrðu tvær skipanir — Code hleður
+        <em>origo</em>-markaðstorginu beint af opinberu
+        GitHub-repo-inu okkar:
       </p>
       <pre><code>claude plugin marketplace add businesscentralal/origo-bc-plugin
 claude plugin install origo-bc@origo</code></pre>
@@ -449,7 +482,7 @@ claude plugin install origo-bc@origo</code></pre>
         Fyrri skipunin skráir <em>origo</em>-markaðstorgið. Seinni
         skipunin sækir nýjustu útgáfu af <code>origo-bc</code> og setur
         hana upp í <code>~/.claude/plugins/</code>. Endurræstu Claude Code
-        til að skilgreiningin hlaðist.
+        (eða opnaðu nýja sessjón) til að skilgreiningin hlaðist.
       </p>
       <p>
         Til að uppfæra seinna:
@@ -804,7 +837,7 @@ claude plugin install origo-bc@origo</code></pre>
 
       <h2>What you get</h2>
       <ul>
-        <li>An always-on rule (<code>bc-mcp-connection-rules</code>) that teaches Claude the Origo BC workflow — namespaces, connection formats, update rules.</li>
+        <li>An always-on rule (<code>origo-bc-accounting</code>) that teaches Claude the Origo BC workflow — namespaces, connection formats, update rules.</li>
         <li><code>/origo-bc-setup</code> — first-time connection wizard.</li>
         <li><code>/origo-bc-add-env</code> — add additional BC tenants.</li>
         <li><code>/origo-bc-list-environments</code> — list everything connected.</li>
@@ -891,17 +924,50 @@ claude plugin install origo-bc@origo</code></pre>
       <h2 id="code">If you're in Code</h2>
       <p>
         Claude Code (the CLI mode) doesn't use the
-        <code>.plugin</code> file. Run two terminal commands instead —
-        Code pulls the <em>origo</em> marketplace straight from our
-        public GitHub repo:
+        <code>.plugin</code> file. First install the
+        <code>claude</code> CLI itself, then run two commands to add
+        origo-bc.
+      </p>
+
+      <h3>1. Install the Claude Code CLI</h3>
+      <p>
+        If you don't have the <code>claude</code> command on your
+        PATH yet, install it first:
+      </p>
+
+      <p><strong>macOS</strong></p>
+      <pre><code># Option A — Homebrew (recommended)
+brew install claude
+
+# Option B — npm
+npm install -g @anthropic-ai/claude-code</code></pre>
+
+      <p><strong>Windows</strong></p>
+      <pre><code># npm (requires Node.js 18+)
+npm install -g @anthropic-ai/claude-code</code></pre>
+
+      <p>
+        Verify the install:
+      </p>
+      <pre><code>claude --version</code></pre>
+      <p class="small">
+        If the command isn't found, close and reopen your terminal
+        (or restart VS Code) so the updated PATH takes effect.
+      </p>
+
+      <h3>2. Add the origo-bc plugin</h3>
+      <p>
+        Run two terminal commands — Code pulls the
+        <em>origo</em> marketplace straight from our public GitHub
+        repo:
       </p>
       <pre><code>claude plugin marketplace add businesscentralal/origo-bc-plugin
 claude plugin install origo-bc@origo</code></pre>
       <p>
         The first command registers the <em>origo</em> marketplace. The
         second pulls the latest <code>origo-bc</code> build and installs
-        it into <code>~/.claude/plugins/</code>. Restart Claude Code so
-        the definitions load.
+        it into <code>~/.claude/plugins/</code>. Restart Claude Code
+        (or open a new session) so the definitions load.
       </p>
       <p>
         To update later:

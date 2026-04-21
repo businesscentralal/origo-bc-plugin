@@ -15,7 +15,8 @@ artifact on every push to `main`.
 │       ├── .claude-plugin/plugin.json
 │       ├── README.md
 │       ├── skills/
-│       │   ├── bc-mcp-connection-rules/SKILL.md
+│       │   ├── origo-bc-accounting/SKILL.md
+│       │   ├── origo-bc-cloud-events/SKILL.md
 │       │   ├── origo-bc-setup/SKILL.md
 │       │   ├── origo-bc-add-env/SKILL.md
 │       │   ├── origo-bc-list-environments/SKILL.md

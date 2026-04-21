@@ -116,7 +116,7 @@ Initial plugin release.
 
 ### Added
 
-- `bc-mcp-connection-rules` auto-loading skill with Origo BC operating
+- `origo-bc-accounting` auto-loading skill with Origo BC operating
   rules (MCP-Skills / MCP-Prompts / UBL Templates namespaces, two
   connection formats, update rules, EndpointID resolution).
 - `/origo-bc-setup` first-time connection wizard.

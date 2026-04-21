@@ -1,5 +1,5 @@
 ---
-name: bc-mcp-connection-rules
+name: origo-bc-accounting
 description: >
   This skill should be used when the user mentions Business Central, BC,
   Dynamics 365, Origo BC, the MCP server at dynamics.is, skills or prompts
@@ -18,6 +18,30 @@ metadata:
 Follow these rules whenever the user is working with the Origo BC MCP
 endpoint (`https://dynamics.is/api/mcp`), skills, prompts, UBL templates or
 the `/origo-bc-*` commands.
+
+## Full accounting rules — `get_bc_accounting_rules`
+
+This skill is a compact starter set. The MCP server hosts a **comprehensive
+version** of the Origo BC accounting and development rules at
+`https://origopublic.blob.core.windows.net/resources/mcp/CLAUDE.online.md`.
+
+**When this skill loads, call `get_bc_accounting_rules` on the MCP server to
+fetch the full rules.** The tool supports three retrieval modes:
+
+| Call | What you get |
+|------|-------------|
+| `get_bc_accounting_rules()` | Frontmatter, intro, and a heading-only table of contents (small payload — start here). |
+| `get_bc_accounting_rules({ section: "AL Naming Conventions" })` | A single section by heading text (case-insensitive, substring match). |
+| `get_bc_accounting_rules({ full: true })` | The entire document — use only when the full context is truly needed. |
+
+The tool caches the document for 5 minutes. Pass `{ refresh: true }` to
+bypass the cache.
+
+**Recommended flow:**
+1. Call with no arguments to get the TOC.
+2. Load sections on demand as the conversation requires them.
+3. Only request `{ full: true }` when a broad review or cross-cutting task
+   needs the complete document.
 
 ## Cowork / Claude.ai scope
 
@@ -66,10 +90,6 @@ slice of work.
 
 For a `remote-loader` skill: fetch the record, then fetch `sourceUrl`, then
 use the downloaded content as the authoritative body.
-
-Example: `bc-cloud-events` (`A4000001-0000-0000-0000-000000000001`) is a
-`remote-loader` that pulls from
-`https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md`.
 
 ## Reading prompts from BC
 
@@ -163,7 +183,6 @@ set_config(source: "MCP-Skills", id: "<guid>", data: { ...updated body... })
    - `A1xxxxxx` — `bc-general/*` (content)
    - `A2xxxxxx` — `bc-journal-corrections/*` (content)
    - `A3xxxxxx` — `bc-incoming-document/*` (content)
-   - `A4xxxxxx` — `bc-integration/*` (often remote-loader)
    - `A9xxxxxx` — top-level orchestration skills (content)
 2. Decide `type`: `content` (store in BC) or `remote-loader` (store metadata + URL).
 3. Save the skill with `set_config(source: "MCP-Skills", ...)`.
