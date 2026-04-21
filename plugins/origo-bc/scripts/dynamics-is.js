@@ -134,13 +134,15 @@ function unwrapDpapi(value, label) {
 // Both checks run first so misconfigured args surface clear errors without
 // paying for a DPAPI round-trip.
 
-// Connection string MUST be DPAPI-protected. Plaintext is rejected outright
-// so the value stored in the config is never directly replayable.
-if (typeof ENCRYPTED_CONN_ARG !== 'string' || !ENCRYPTED_CONN_ARG.startsWith('dpapi:')) {
+// Connection string MUST use a recognized prefix so we know how to unwrap it.
+// "dpapi:<base64>" — Windows DPAPI-protected (Create-ConnectionString.ps1)
+// "plain:<base64>" — plaintext base64 (create-connection-string.js --no-dpapi)
+if (typeof ENCRYPTED_CONN_ARG !== 'string' ||
+    (!ENCRYPTED_CONN_ARG.startsWith('dpapi:') && !ENCRYPTED_CONN_ARG.startsWith('plain:'))) {
   process.stderr.write(
-    '[stdio-proxy] <encryptedConn> must be a "dpapi:<base64>" value produced ' +
-    'by Create-ConnectionString.ps1. Plaintext connection strings are not ' +
-    'accepted.\n'
+    '[stdio-proxy] <encryptedConn> must be either:\n' +
+    '  • "dpapi:<base64>" produced by Create-ConnectionString.ps1 (Windows), or\n' +
+    '  • "plain:<base64>" produced by create-connection-string.js --no-dpapi (macOS/Linux).\n'
   );
   process.exit(1);
 }
