@@ -290,3 +290,63 @@ steps:
       STORAGE_SAS_TOKEN: $(StorageSasToken)
     displayName: Upload install guide to public blob
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+  # ---------------------------------------------------------------------
+  # Mirror main to public GitHub repo
+  #
+  # Pushes the current state of main to
+  #   https://github.com/businesscentralal/origo-bc-plugin
+  # on every successful push to main. The GitHub repo is the primary
+  # distribution surface for Claude Code users:
+  #
+  #   claude plugin marketplace add businesscentralal/origo-bc-plugin
+  #   claude plugin install origo-bc@origo
+  #
+  # The blob-hosted marketplace and the .plugin file remain available
+  # (see steps above) — this mirror is purely additive and gives us a
+  # shorter, GitHub-native install path.
+  #
+  # Auth: fine-grained GitHub PAT with Contents: Read & write on the
+  # target repo, stored in the "CI Build Agent" variable group as
+  # `GitHubPat` (secret).
+  # ---------------------------------------------------------------------
+  - bash: |
+      set -euo pipefail
+
+      GITHUB_OWNER="businesscentralal"
+      GITHUB_REPO="origo-bc-plugin"
+      REMOTE_URL="https://x-access-token:${GITHUB_PAT}@github.com/${GITHUB_OWNER}/${GITHUB_REPO}.git"
+
+      echo "Mirror target: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}"
+
+      # Azure Pipelines checks out shallow by default. Unshallow so the
+      # mirror push carries full history.
+      if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+        echo "Unshallowing local clone..."
+        git fetch --unshallow origin
+      fi
+
+      # Identity is only needed if we were to create commits (we aren't),
+      # but git warns without it on some agents.
+      git config user.email "ci@origo.is"
+      git config user.name  "Origo CI"
+
+      # Push current HEAD to the mirror's main. Force because Azure
+      # DevOps is the single source of truth — the mirror should always
+      # match exactly. Redirect the remote URL through /dev/null pattern
+      # so the PAT never shows up in logs.
+      echo "Pushing HEAD to ${GITHUB_OWNER}/${GITHUB_REPO}:main ..."
+      git push --force "$REMOTE_URL" "HEAD:refs/heads/main" 2>&1 \
+        | sed "s#${GITHUB_PAT}#***#g"
+
+      echo ""
+      echo "Mirror updated."
+      echo "  https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}"
+      echo ""
+      echo "Claude Code users can install with:"
+      echo "  claude plugin marketplace add ${GITHUB_OWNER}/${GITHUB_REPO}"
+      echo "  claude plugin install origo-bc@origo"
+    env:
+      GITHUB_PAT: $(GitHubPat)
+    displayName: Mirror main to public GitHub repo
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))

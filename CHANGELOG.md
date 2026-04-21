@@ -5,6 +5,31 @@ The plugin follows [semantic versioning](https://semver.org/).
 
 ## Unreleased
 
+### Distribution (GitHub mirror)
+
+- Azure DevOps repo is mirrored to a public GitHub repo on every
+  successful `main` build:
+  <https://github.com/businesscentralal/origo-bc-plugin>
+- GitHub is now the primary Claude Code marketplace surface. Install
+  command shortens to:
+
+  ```
+  claude plugin marketplace add businesscentralal/origo-bc-plugin
+  claude plugin install origo-bc@origo
+  ```
+
+- Cowork organization admins can point at the same GitHub URL when
+  publishing `origo-bc` as an "org plugin" in Anthropic's Admin Console —
+  the officially documented path for Cowork orgs.
+- Azure DevOps remains the private source of truth. The blob-hosted
+  marketplace and the `.plugin` zip are retained as fallback
+  distribution channels.
+- Mirror auth: fine-grained GitHub PAT with `Contents: Read & write` on
+  the target repo, stored in the `CI Build Agent` variable group as
+  `GitHubPat` (secret).
+- README and `install.html` lead with the GitHub command; the blob
+  command remains as a documented alternative.
+
 ### CI / Release
 
 - Azure Pipelines now uploads `origo-bc.plugin` to the public Origo blob

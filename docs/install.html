@@ -129,6 +129,7 @@
       color: var(--ink);
     }
     p { margin: 0 0 12px; }
+    p.small { font-size: 14px; color: var(--muted); margin-top: 4px; }
     a { color: var(--accent); }
     ol, ul { margin: 0 0 14px; padding-left: 22px; }
     ol li, ul li { margin-bottom: 6px; }
@@ -439,10 +440,10 @@
       <p>
         Claude Code (CLI-hamurinn) notar ekki
         <code>.plugin</code>-skrá. Keyrðu þess í stað tvær skipanir í
-        skipanaglugga — Code hleður origo-markaðstorginu beint af
-        Azure-blobbinum:
+        skipanaglugga — Code hleður <em>origo</em>-markaðstorginu beint
+        af opinberu GitHub-repo-inu okkar:
       </p>
-      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+      <pre><code>claude plugin marketplace add businesscentralal/origo-bc-plugin
 claude plugin install origo-bc@origo</code></pre>
       <p>
         Fyrri skipunin skráir <em>origo</em>-markaðstorgið. Seinni
@@ -456,6 +457,12 @@ claude plugin install origo-bc@origo</code></pre>
         Til að fjarlægja:
         <code>claude plugin uninstall origo-bc</code>.
       </p>
+      <p class="small">
+        Aukaleið: ef þú vilt frekar nota Azure-blobbinn sem
+        markaðstorg (sama innihald):
+      </p>
+      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+claude plugin install origo-bc@origo</code></pre>
 
       <h3>Bætir við Cloud Events-þekkingu</h3>
       <p>
@@ -885,9 +892,10 @@ claude plugin install origo-bc@origo</code></pre>
       <p>
         Claude Code (the CLI mode) doesn't use the
         <code>.plugin</code> file. Run two terminal commands instead —
-        Code pulls the origo marketplace straight from the Azure blob:
+        Code pulls the <em>origo</em> marketplace straight from our
+        public GitHub repo:
       </p>
-      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+      <pre><code>claude plugin marketplace add businesscentralal/origo-bc-plugin
 claude plugin install origo-bc@origo</code></pre>
       <p>
         The first command registers the <em>origo</em> marketplace. The
@@ -900,6 +908,12 @@ claude plugin install origo-bc@origo</code></pre>
         <code>claude plugin update origo-bc@origo</code>.
         To remove: <code>claude plugin uninstall origo-bc</code>.
       </p>
+      <p class="small">
+        Alternative: you can use the Azure blob as marketplace instead
+        (same content):
+      </p>
+      <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
+claude plugin install origo-bc@origo</code></pre>
 
       <h3>Add the Cloud Events skill</h3>
       <p>

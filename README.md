@@ -65,14 +65,37 @@ origo-bc-plugin**.
 
 ## Stable public URLs
 
-On every successful push to `main`, the pipeline publishes the plugin
-(and the marketplace manifest) to the public Origo blob so anyone —
-inside or outside Origo — can install without needing Azure DevOps
-access:
+Azure DevOps is the private source of truth. On every successful push
+to `main`, the pipeline publishes to two public surfaces — pick whichever
+fits your tool. The GitHub mirror is the primary path for Claude Code
+users; the Origo blob keeps the `.plugin` zip and the bilingual install
+guide.
+
+### Primary: public GitHub mirror
+
+- **Public repo** — native Claude Code marketplace format:
+  <https://github.com/businesscentralal/origo-bc-plugin>
+
+Claude Code users install with one short command pair:
+
+```
+claude plugin marketplace add businesscentralal/origo-bc-plugin
+claude plugin install origo-bc@origo
+```
+
+Cowork organization admins can point the same URL at their "org plugin"
+marketplace inside Anthropic's Admin Console — the officially documented
+path for Cowork orgs. The mirror push uses a fine-grained GitHub PAT
+stored in the `CI Build Agent` variable group as `GitHubPat`.
+
+### Secondary: Origo blob
+
+Kept for the Cowork drag-and-drop path, the bilingual install guide,
+and as a fallback marketplace.
 
 - **Install guide (bilingual IS/EN)** — the public-facing page:
   <https://origopublic.blob.core.windows.net/resources/mcp/install.html>
-- **Marketplace root** — for Claude Code users (see below):
+- **Marketplace root** — alternative Claude Code install URL:
   <https://origopublic.blob.core.windows.net/resources/mcp>
 - **Marketplace manifest** (direct link, rarely needed):
   <https://origopublic.blob.core.windows.net/resources/mcp/.claude-plugin/marketplace.json>
@@ -81,11 +104,11 @@ access:
 - **Versioned plugin** (immutable, one per version in `plugin.json`):
   `https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-<version>.plugin`
 
-The upload step uses the `CI Build Agent` variable group in Azure DevOps
-(`StorageBaseURL` + `StorageSasToken`). The versioned `.plugin` copy is
-never overwritten — bump `version` in `plugin.json` to publish a new
-release. The install guide, marketplace manifest, and plugin source tree
-are overwritten on every build.
+The blob upload uses `StorageBaseURL` + `StorageSasToken` from the same
+variable group. The versioned `.plugin` copy is never overwritten — bump
+`version` in `plugin.json` to publish a new release. The install guide,
+marketplace manifest, and plugin source tree are overwritten on every
+build.
 
 ## Cutting a release
 
@@ -125,8 +148,14 @@ Then:
 
 ### Claude Code (CLI) — marketplace install
 
-Claude Code reads the marketplace manifest directly off the blob and
-resolves the plugin source without needing the `.plugin` zip:
+Claude Code resolves the plugin source directly from the GitHub mirror:
+
+```
+claude plugin marketplace add businesscentralal/origo-bc-plugin
+claude plugin install origo-bc@origo
+```
+
+Equivalent blob-based command (fallback, same content):
 
 ```
 claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
