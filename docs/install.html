@@ -195,6 +195,56 @@
     }
     .url-row a { color: #9ac1f5; text-decoration: none; }
     .url-row a:hover { text-decoration: underline; }
+    .modes {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 16px 0 8px;
+    }
+    @media (min-width: 640px) {
+      .modes { grid-template-columns: repeat(3, 1fr); }
+    }
+    .mode {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    .mode h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode .badge {
+      display: inline-block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-soft);
+      color: var(--muted);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    .mode .badge.ok { background: #dcfce7; color: #166534; }
+    .mode .badge.no { background: #fee2e2; color: #991b1b; }
+    @media (prefers-color-scheme: dark) {
+      .mode .badge.ok { background: #14311d; color: #86efac; }
+      .mode .badge.no { background: #2a1414; color: #fca5a5; }
+    }
+    .mode p { font-size: 13px; color: var(--muted); margin: 4px 0 10px; }
+    .mode a.jump {
+      margin-top: auto;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--accent);
+    }
+    .mode a.jump:hover { text-decoration: underline; }
     [data-lang] { display: none; }
     html[lang="is"] [data-lang="is"],
     html[lang="en"] [data-lang="en"] { display: block; }
@@ -216,35 +266,38 @@
       <div data-lang="is">
         <h1>Tengdu Claude við Business Central</h1>
         <p class="lede">
-          <code>origo-bc</code> er viðbót fyrir Claude Cowork og Claude Code
-          sem tengir Claude við Origo Business Central MCP-þjón. Opið
-          öllum — veldu þá uppsetningarleið sem hentar tólinu þínu.
+          <code>origo-bc</code> tengir Claude Desktop við Origo
+          Business Central MCP-þjón. Byrjaðu alltaf í
+          <strong>Claude Desktop</strong> — en uppsetningin fer eftir því
+          í hvaða ham þú ert.
         </p>
-        <a class="cta" href="origo-bc.plugin" download>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Sækja origo-bc.plugin (niðurhal)
-        </a>
-        <a class="subcta" href="#versions">Eða veldu fasta útgáfu &rarr;</a>
-        <p style="margin:12px 0 0; font-size:13px; color:var(--muted);">
-          Smelltu á hnappinn <strong>í vafra</strong> — ekki líma URL-ið inn í Cowork sem skilaboð.
+        <p style="margin:0; font-size:14px; color:var(--muted);">
+          <a href="#which-mode">Hvaða hamur? &rarr;</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#cowork">Cowork</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#code">Code</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#versions">Útgáfur</a>
         </p>
       </div>
 
       <div data-lang="en">
         <h1>Connect Claude to Business Central</h1>
         <p class="lede">
-          <code>origo-bc</code> is a plugin for Claude Cowork and Claude
-          Code that wires Claude up to the Origo Business Central MCP
-          server. Open to everyone — pick the install path that matches
-          your tool.
+          <code>origo-bc</code> wires Claude Desktop up to the Origo
+          Business Central MCP server. You always start from
+          <strong>Claude Desktop</strong> — what you do next depends on
+          which mode you're in.
         </p>
-        <a class="cta" href="origo-bc.plugin" download>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download origo-bc.plugin
-        </a>
-        <a class="subcta" href="#versions">Or pick a pinned version &rarr;</a>
-        <p style="margin:12px 0 0; font-size:13px; color:var(--muted);">
-          Click the button <strong>in a browser</strong> — don't paste the URL into Cowork as a message.
+        <p style="margin:0; font-size:14px; color:var(--muted);">
+          <a href="#which-mode">Which mode? &rarr;</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#cowork">Cowork</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#code">Code</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#versions">Versions</a>
         </p>
       </div>
     </header>
@@ -253,6 +306,42 @@
     <!--                        ÍSLENSKA                                -->
     <!-- ============================================================= -->
     <div data-lang="is">
+
+      <h2 id="which-mode">Hvaða hamur í Claude Desktop?</h2>
+      <p>
+        Claude Desktop (frá
+        <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>)
+        býður upp á þrjár leiðir — og <strong>origo-bc er ekki sett upp
+        á sama hátt í þeim öllum</strong>. Finndu þann sem þú ert í:
+      </p>
+
+      <div class="modes">
+        <div class="mode">
+          <h3>Chat <span class="badge no">Ekki stutt</span></h3>
+          <p>
+            Venjulegt Claude Desktop spjall. Engin plugin-stuðning — origo-bc
+            virkar ekki hér. Skiptu yfir í Cowork eða Code.
+          </p>
+        </div>
+        <div class="mode">
+          <h3>Cowork <span class="badge ok">Mælt með</span></h3>
+          <p>
+            Skrifstofuverkefni — tala við Claude, leita í BC,
+            undirbúa PEPPOL UBL XML, birtingarhæf svör. Dragðu
+            <code>.plugin</code>-skrá í spjall.
+          </p>
+          <a class="jump" href="#cowork">Uppsetning fyrir Cowork &rarr;</a>
+        </div>
+        <div class="mode">
+          <h3>Code <span class="badge">Þróun</span></h3>
+          <p>
+            Að skrifa AL-kóða, búa til Cloud Events
+            integrationir, keyra CLI-skipanir. Uppsetning með
+            <code>claude plugin marketplace add</code>.
+          </p>
+          <a class="jump" href="#code">Uppsetning fyrir Code &rarr;</a>
+        </div>
+      </div>
 
       <h2>Hvað þú færð</h2>
       <ul>
@@ -265,34 +354,39 @@
 
       <h2>Áður en þú byrjar</h2>
       <div class="card">
-        <h3>Claude Cowork</h3>
-        <p>
-          Plugin-ar virka <strong>aðeins í Cowork</strong> (ekki í
-          venjulegu Claude Desktop spjalli og ekki á claude.ai á vefnum).
-          Sæktu Cowork frá
-          <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>
-          og veldu Cowork-ham.
-        </p>
-
         <h3>Node.js 18 eða nýrri</h3>
         <p>
-          Tengingin keyrir í gegnum lítið Node-ferli sem fylgir með
-          plugin-inu. Staðfestu að Node sé uppsett:
+          Bæði Cowork- og Code-leiðin keyra tengingu í gegnum lítið
+          Node-ferli. Staðfestu að Node sé uppsett:
         </p>
         <pre><code>node --version</code></pre>
         <p>
           Ef skipunin finnst ekki — sæktu LTS-útgáfuna frá
           <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
-          og endurræstu Cowork eftir uppsetningu.
+          og endurræstu Claude Desktop eftir uppsetningu.
         </p>
       </div>
 
-      <h2>1. Sækja skrána í vafra</h2>
+      <!-- ============================ COWORK ============================ -->
+      <h2 id="cowork">Ef þú ert í Cowork</h2>
       <p>
-        Smelltu á hnappinn efst á síðunni <strong>í vafra</strong> (Edge,
-        Chrome, Firefox — ekki Cowork). Vafrinn vistar
-        <code>origo-bc.plugin</code> í <code>Downloads</code>-möppuna
-        þína. Skráin er 20–40 KB.
+        Einfaldasta leiðin er að sækja tilbúna <code>.plugin</code>-skrá
+        og draga hana inn í spjallið.
+      </p>
+
+      <h3>1. Sækja skrána</h3>
+      <p>
+        Smelltu á hnappinn hér að neðan <strong>í vafra</strong>
+        (Edge, Chrome, Firefox — ekki inni í Cowork). Vafrinn vistar
+        <code>origo-bc.plugin</code> í <code>Downloads</code>-möppuna.
+        Skráin er 20–40 KB.
+      </p>
+      <p>
+        <a class="cta" href="origo-bc.plugin" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Sækja origo-bc.plugin
+        </a>
+        <a class="subcta" href="#versions">Eða veldu fasta útgáfu &rarr;</a>
       </p>
 
       <div class="callout">
@@ -302,7 +396,7 @@
         tölvunni þinni áður en þú heldur áfram.
       </div>
 
-      <h2>2. Setja upp í Cowork</h2>
+      <h3>2. Setja upp í Cowork</h3>
       <p>Tvær leiðir — báðar virka, veldu þá sem hentar:</p>
 
       <h3>Leið A — draga skrána í spjall</h3>
@@ -335,29 +429,53 @@
         URL-ið; (3) að þú hafir ýtt á <em>Send</em>, ekki bara hætt við.
       </div>
 
-      <h2>Valmöguleiki — Claude Code (CLI)</h2>
+      <!-- ============================ CODE ============================ -->
+      <h2 id="code">Ef þú ert í Code</h2>
       <p>
-        Notar þú <strong>Claude Code</strong> frá skipanaglugganum?
-        Þá þarftu ekki <code>.plugin</code>-skrána. Keyrðu þess í stað
-        tvær skipanir — Claude Code hleður origo-markaðstorginu beint
-        af Azure-blobbinum:
+        Claude Code (CLI-hamurinn) notar ekki
+        <code>.plugin</code>-skrá. Keyrðu þess í stað tvær skipanir í
+        skipanaglugga — Code hleður origo-markaðstorginu beint af
+        Azure-blobbinum:
       </p>
       <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
 claude plugin install origo-bc@origo</code></pre>
       <p>
-        Fyrri skipunin skráir <em>origo</em>-markaðstorgið (uppruna
-        plugin-a frá Origo). Seinni skipunin sækir nýjustu útgáfu af
-        <code>origo-bc</code> og setur hana upp í
-        <code>~/.claude/plugins/</code>. Endurræstu Claude Code til að
-        skilgreiningin hlaðist.
+        Fyrri skipunin skráir <em>origo</em>-markaðstorgið. Seinni
+        skipunin sækir nýjustu útgáfu af <code>origo-bc</code> og setur
+        hana upp í <code>~/.claude/plugins/</code>. Endurræstu Claude Code
+        til að skilgreiningin hlaðist.
       </p>
       <p>
-        Til að uppfæra seinna: <code>claude plugin update origo-bc@origo</code>.
-        Til að fjarlægja: <code>claude plugin uninstall origo-bc</code>.
+        Til að uppfæra seinna:
+        <code>claude plugin update origo-bc@origo</code>.
+        Til að fjarlægja:
+        <code>claude plugin uninstall origo-bc</code>.
       </p>
 
-      <h2>3. Fyrsta tenging</h2>
-      <p>Byrjaðu nýtt spjall og skrifaðu:</p>
+      <h3>Bætir við Cloud Events fyrir AL-þróun</h3>
+      <p>
+        Ef þú ert að skrifa AL-kóða sem notar <strong>Cloud Events</strong>
+        viðbótina hjá Origo, þá þarftu líka Cloud Events-þekkingarregluna.
+        Hún lýsir atburðakerfinu (hook-point-um, payload-sniði,
+        uppsetningarreglum) og leiðir Claude gegnum rétt mynstur.
+      </p>
+      <p>
+        Reglan liggur á:
+      </p>
+      <div class="url-row">
+        <a href="https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md" target="_blank" rel="noopener">https://origopublic.blob.core.windows.net/help/Cloud Events/bc27/en-US/SKILL.md</a>
+      </div>
+      <p style="margin-top:10px;">
+        Þegar þú ert tengd/ur við BC í gegnum <code>/origo-bc-setup</code>,
+        hleður Claude reglunni sjálfkrafa gegnum <code>bc-cloud-events</code>
+        <em>remote-loader</em>-skilgreininguna í MCP-Skills. Ef þú vilt hafa
+        regluna staðbundna (fyrir <em>offline</em>-vinnu), vistaðu skrána
+        sem <code>~/.claude/skills/bc-cloud-events/SKILL.md</code>.
+      </p>
+
+      <!-- ============================ SAMEIGINLEGT ============================ -->
+      <h2>Fyrsta tenging (bæði Cowork og Code)</h2>
+      <p>Byrjaðu nýtt spjall / sessjón og skrifaðu:</p>
       <pre><code>/origo-bc-setup</code></pre>
       <p>Aðstoðarmaðurinn spyr þig um:</p>
       <ol>
@@ -367,7 +485,7 @@ claude plugin install origo-bc@origo</code></pre>
       </ol>
       <p>Þegar stofnunin er tilbúin sérðu <code>setup_origo_bc_environment</code> keyrt og MCP-þjónninn birtist í tólalista Claude.</p>
 
-      <h2>4. Bæta við fleiri umhverfum</h2>
+      <h2>Bæta við fleiri umhverfum</h2>
       <p>Ef þú vinnur með fleira en eitt BC-fyrirtæki:</p>
       <pre><code>/origo-bc-add-env</code></pre>
       <p>Hver tenging fær sitt nafn (t.d. <em>prod</em>, <em>test</em>, <em>cronus</em>) og þú getur skipt á milli þeirra án þess að endurstilla.</p>
@@ -430,6 +548,42 @@ claude plugin install origo-bc@origo</code></pre>
     <!-- ============================================================= -->
     <div data-lang="en">
 
+      <h2 id="which-mode">Which Claude Desktop mode?</h2>
+      <p>
+        Claude Desktop (from
+        <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>)
+        ships three modes — and <strong>origo-bc is installed
+        differently in each one</strong>. Find the one you're in:
+      </p>
+
+      <div class="modes">
+        <div class="mode">
+          <h3>Chat <span class="badge no">Not supported</span></h3>
+          <p>
+            The regular Claude Desktop chat. No plugin support — origo-bc
+            won't run here. Switch to Cowork or Code.
+          </p>
+        </div>
+        <div class="mode">
+          <h3>Cowork <span class="badge ok">Recommended</span></h3>
+          <p>
+            Office work — talking to Claude, searching BC, preparing
+            PEPPOL UBL XML, presentable replies. Install by dropping a
+            <code>.plugin</code> file into chat.
+          </p>
+          <a class="jump" href="#cowork">Install for Cowork &rarr;</a>
+        </div>
+        <div class="mode">
+          <h3>Code <span class="badge">Development</span></h3>
+          <p>
+            Writing AL code, building Cloud Events integrations, running
+            CLI commands. Install with
+            <code>claude plugin marketplace add</code>.
+          </p>
+          <a class="jump" href="#code">Install for Code &rarr;</a>
+        </div>
+      </div>
+
       <h2>What you get</h2>
       <ul>
         <li>An always-on rule (<code>bc-mcp-connection-rules</code>) that teaches Claude the Origo BC workflow — namespaces, connection formats, update rules.</li>
@@ -441,34 +595,39 @@ claude plugin install origo-bc@origo</code></pre>
 
       <h2>Before you start</h2>
       <div class="card">
-        <h3>Claude Cowork</h3>
-        <p>
-          Plugins only run in <strong>Cowork mode</strong> — not in the
-          regular Claude Desktop chat and not on claude.ai on the web.
-          Install Cowork from
-          <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>
-          and switch to Cowork.
-        </p>
-
         <h3>Node.js 18 or newer</h3>
         <p>
-          The connection runs through a small Node process bundled with
-          the plugin. Check your install:
+          Both Cowork and Code drive the connection through a small Node
+          process. Check your install:
         </p>
         <pre><code>node --version</code></pre>
         <p>
           If the command isn't found, grab the LTS build from
           <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
-          and restart Cowork afterwards.
+          and restart Claude Desktop afterwards.
         </p>
       </div>
 
-      <h2>1. Download the file in your browser</h2>
+      <!-- ============================ COWORK ============================ -->
+      <h2 id="cowork">If you're in Cowork</h2>
       <p>
-        Click the button at the top of this page <strong>in a web
-        browser</strong> (Edge, Chrome, Firefox — not Cowork). The
-        browser saves <code>origo-bc.plugin</code> to your
-        <code>Downloads</code> folder. The file is 20–40 KB.
+        The simplest path is to download the prebuilt
+        <code>.plugin</code> file and drop it into chat.
+      </p>
+
+      <h3>1. Download the file</h3>
+      <p>
+        Click the button below <strong>in a web browser</strong>
+        (Edge, Chrome, Firefox — not inside Cowork). The browser saves
+        <code>origo-bc.plugin</code> into your <code>Downloads</code>
+        folder. The file is 20–40 KB.
+      </p>
+      <p>
+        <a class="cta" href="origo-bc.plugin" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download origo-bc.plugin
+        </a>
+        <a class="subcta" href="#versions">Or pick a pinned version &rarr;</a>
       </p>
 
       <div class="callout">
@@ -478,7 +637,7 @@ claude plugin install origo-bc@origo</code></pre>
         before continuing.
       </div>
 
-      <h2>2. Install in Cowork</h2>
+      <h3>2. Install in Cowork</h3>
       <p>Two ways — either works, pick whichever is handier:</p>
 
       <h3>Option A — drop the file into chat</h3>
@@ -510,29 +669,51 @@ claude plugin install origo-bc@origo</code></pre>
         (3) you hit <em>Send</em> instead of cancelling.
       </div>
 
-      <h2>Alternative — Claude Code (CLI)</h2>
+      <!-- ============================ CODE ============================ -->
+      <h2 id="code">If you're in Code</h2>
       <p>
-        Using <strong>Claude Code</strong> from the terminal? You don't
-        need the <code>.plugin</code> file. Run two commands instead —
-        Claude Code pulls the origo marketplace straight from the Azure
-        blob:
+        Claude Code (the CLI mode) doesn't use the
+        <code>.plugin</code> file. Run two terminal commands instead —
+        Code pulls the origo marketplace straight from the Azure blob:
       </p>
       <pre><code>claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
 claude plugin install origo-bc@origo</code></pre>
       <p>
-        The first command registers the <em>origo</em> marketplace (the
-        source of Origo plugins). The second pulls the latest
-        <code>origo-bc</code> build and installs it into
-        <code>~/.claude/plugins/</code>. Restart Claude Code so the
-        definitions load.
+        The first command registers the <em>origo</em> marketplace. The
+        second pulls the latest <code>origo-bc</code> build and installs
+        it into <code>~/.claude/plugins/</code>. Restart Claude Code so
+        the definitions load.
       </p>
       <p>
-        To update later: <code>claude plugin update origo-bc@origo</code>.
+        To update later:
+        <code>claude plugin update origo-bc@origo</code>.
         To remove: <code>claude plugin uninstall origo-bc</code>.
       </p>
 
-      <h2>3. First connection</h2>
-      <p>Start a fresh chat and type:</p>
+      <h3>Add Cloud Events for AL development</h3>
+      <p>
+        If you're writing AL code that uses Origo's <strong>Cloud
+        Events</strong> extension, you'll also want the Cloud Events
+        knowledge skill. It documents the event system (hook points,
+        payload shapes, setup rules) and guides Claude through the
+        right patterns.
+      </p>
+      <p>The skill lives at:</p>
+      <div class="url-row">
+        <a href="https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md" target="_blank" rel="noopener">https://origopublic.blob.core.windows.net/help/Cloud Events/bc27/en-US/SKILL.md</a>
+      </div>
+      <p style="margin-top:10px;">
+        Once you're connected to BC via <code>/origo-bc-setup</code>,
+        Claude loads the skill automatically through the
+        <code>bc-cloud-events</code> <em>remote-loader</em> entry in
+        MCP-Skills. If you prefer a local copy (e.g. for offline work),
+        save the file as
+        <code>~/.claude/skills/bc-cloud-events/SKILL.md</code>.
+      </p>
+
+      <!-- ============================ SHARED ============================ -->
+      <h2>First connection (both Cowork and Code)</h2>
+      <p>Start a fresh chat / session and type:</p>
       <pre><code>/origo-bc-setup</code></pre>
       <p>The wizard asks for:</p>
       <ol>
@@ -542,7 +723,7 @@ claude plugin install origo-bc@origo</code></pre>
       </ol>
       <p>Once the environment is set up, you'll see <code>setup_origo_bc_environment</code> run and the MCP server appear in Claude's tool list.</p>
 
-      <h2>4. Adding more environments</h2>
+      <h2>Adding more environments</h2>
       <p>If you work across multiple BC companies:</p>
       <pre><code>/origo-bc-add-env</code></pre>
       <p>Each connection gets its own handle (e.g. <em>prod</em>, <em>test</em>, <em>cronus</em>) and you can switch between them without re-running setup.</p>

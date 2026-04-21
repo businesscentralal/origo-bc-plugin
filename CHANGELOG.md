@@ -39,9 +39,17 @@ The plugin follows [semantic versioning](https://semver.org/).
   auto-uploaded to
   <https://origopublic.blob.core.windows.net/resources/mcp/install.html>
   on every build. Language toggle via `#en` hash. Designed as the one
-  URL to share externally — contains prerequisites, install steps for
-  Cowork (GUI) and Claude Code (CLI marketplace), first-time setup,
-  multi-environment guidance, and a troubleshooting section.
+  URL to share externally.
+- Install guide restructured around Claude Desktop's three modes
+  (Chat / Cowork / Code). Anchor links jump straight to the relevant
+  section (`#cowork`, `#code`). Three-card decision block at the top
+  helps users pick the right path before they read instructions that
+  don't apply to them.
+- Code section points AL developers to the
+  <code>bc-cloud-events</code> skill
+  (<https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md>)
+  and explains that Claude loads it automatically through the
+  remote-loader entry in MCP-Skills once BC is connected.
 
 ## [0.1.1] — 2026-04-21
 
