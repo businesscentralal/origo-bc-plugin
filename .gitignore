@@ -1,0 +1,18 @@
+# Build output
+/build/
+/dist/
+*.plugin
+
+# Node / editor noise
+node_modules/
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Local secrets & credentials — must never be committed
+secrets/
+*.env
+*.env.*
+!*.env.example

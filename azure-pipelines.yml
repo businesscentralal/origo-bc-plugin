@@ -1,0 +1,83 @@
+# Azure Pipelines build definition for the origo-bc Cowork plugin.
+#
+# Trigger: every push to main — the pipeline validates the plugin source,
+# packages it as `origo-bc.plugin`, and publishes the bundle as a pipeline
+# artifact so anyone with pipeline-read access can download it.
+#
+# Conventions used:
+#   - ubuntu-latest agent (Node 20 is preinstalled, zip is available)
+#   - plugin source tree lives under plugins/origo-bc
+#   - build output goes to $(Build.ArtifactStagingDirectory)/origo-bc.plugin
+#   - the pipeline reads the semver from plugins/origo-bc/.claude-plugin/plugin.json
+#     so the run name matches the version being shipped
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - plugins/**
+      - scripts/**
+      - .claude-plugin/**
+      - azure-pipelines.yml
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - plugins/**
+      - scripts/**
+      - .claude-plugin/**
+      - azure-pipelines.yml
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  PLUGIN_DIR: plugins/origo-bc
+  STAGING_DIR: $(Build.ArtifactStagingDirectory)
+
+# Pretty run name that includes both the plugin semver and the commit SHA
+name: $(Date:yyyyMMdd).$(Rev:r)_$(Build.SourceVersion)
+
+steps:
+  - checkout: self
+    fetchDepth: 1
+    displayName: Checkout repository
+
+  - task: UseNode@1
+    displayName: Use Node 20
+    inputs:
+      version: '20.x'
+
+  - bash: |
+      set -euo pipefail
+      echo "Node: $(node --version)"
+      echo "Zip : $(zip --version | head -1)"
+      jq --version
+    displayName: Tool versions
+
+  - bash: |
+      set -euo pipefail
+      bash scripts/validate-plugin.sh "$(PLUGIN_DIR)"
+    displayName: Validate plugin source
+
+  - bash: |
+      set -euo pipefail
+      bash scripts/build-plugin.sh "$(PLUGIN_DIR)" "$(STAGING_DIR)"
+    displayName: Build origo-bc.plugin
+
+  - bash: |
+      set -euo pipefail
+      VERSION=$(jq -r .version "$(PLUGIN_DIR)/.claude-plugin/plugin.json")
+      echo "##vso[build.updatebuildnumber]origo-bc $VERSION + $(Build.SourceBranchName) $(Build.SourceVersion)"
+      echo "Produced origo-bc.plugin for version $VERSION"
+      ls -la "$(STAGING_DIR)"
+    displayName: Annotate run with plugin version
+
+  - publish: $(STAGING_DIR)
+    displayName: Publish origo-bc.plugin artifact
+    artifact: origo-bc-plugin

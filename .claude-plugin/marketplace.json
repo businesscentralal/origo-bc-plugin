@@ -1,0 +1,17 @@
+{
+  "name": "origo",
+  "owner": {
+    "name": "Origo hf.",
+    "email": "mcp@origo.is",
+    "url": "https://origo.is"
+  },
+  "description": "Origo plugins for Claude Cowork / Claude Code — Business Central integration and related tooling.",
+  "plugins": [
+    {
+      "name": "origo-bc",
+      "source": "./plugins/origo-bc",
+      "description": "Microsoft Dynamics 365 Business Central integration for Cowork via the Origo MCP endpoint at https://dynamics.is/api/mcp. Ships /origo-bc-setup, /origo-bc-add-env, /origo-bc-list-environments and /origo-bc-switch-company.",
+      "keywords": ["business-central", "dynamics-365", "mcp", "origo", "bc"]
+    }
+  ]
+}
