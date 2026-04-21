@@ -3,6 +3,19 @@
 All notable changes to the `origo-bc` Cowork plugin are documented here.
 The plugin follows [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+### CI / Release
+
+- Azure Pipelines now uploads `origo-bc.plugin` to the public Origo blob
+  on every successful push to `main`:
+  - <https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin>
+    (latest, overwritten each build)
+  - `https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-<version>.plugin`
+    (versioned, immutable)
+- Upload auth comes from the `CI Build Agent` variable group
+  (`StorageBaseURL`, `StorageSasToken`).
+
 ## [0.1.1] — 2026-04-21
 
 ### Added

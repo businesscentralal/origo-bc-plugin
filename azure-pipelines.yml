@@ -37,21 +37,37 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  PLUGIN_DIR: plugins/origo-bc
-  STAGING_DIR: $(Build.ArtifactStagingDirectory)
+  # The "CI Build Agent" variable group is maintained in Azure DevOps
+  # (Pipelines → Library). It provides:
+  #   - StorageBaseURL   e.g. https://origopublic.blob.core.windows.net/
+  #   - StorageSasToken  container-scoped SAS for the `resources` container
+  # These are used by the release step below to publish the built plugin
+  # to a stable public URL. DO NOT hardcode these values here.
+  - group: 'CI Build Agent'
+  - name: PLUGIN_DIR
+    value: plugins/origo-bc
+  - name: STAGING_DIR
+    value: $(Build.ArtifactStagingDirectory)
+  # Destination path inside the blob container. Kept as a variable so we
+  # can re-point later (e.g. from `mcp/` to `mcp/stable/`) without touching
+  # every step.
+  - name: BLOB_CONTAINER
+    value: resources
+  - name: BLOB_PREFIX
+    value: mcp
 
 # Pretty run name that includes both the plugin semver and the commit SHA
 name: $(Date:yyyyMMdd).$(Rev:r)_$(Build.SourceVersion)
 
 steps:
   - checkout: self
-    fetchDepth: 1
+    fetchDepth: '1'
     displayName: Checkout repository
 
-  - task: UseNode@1
+  - task: NodeTool@0
     displayName: Use Node 20
     inputs:
-      version: '20.x'
+      versionSpec: '20.x'
 
   - bash: |
       set -euo pipefail
@@ -81,3 +97,89 @@ steps:
   - publish: $(STAGING_DIR)
     displayName: Publish origo-bc.plugin artifact
     artifact: origo-bc-plugin
+
+  # ---------------------------------------------------------------------
+  # Release step — upload to public blob storage
+  #
+  # Uploads the built plugin to
+  #   $(StorageBaseURL)$(BLOB_CONTAINER)/$(BLOB_PREFIX)/origo-bc.plugin
+  # (the "latest" copy — always overwritten) AND
+  #   $(StorageBaseURL)$(BLOB_CONTAINER)/$(BLOB_PREFIX)/origo-bc-<version>.plugin
+  # (a versioned, immutable copy for reference).
+  #
+  # Only runs on pushes to `main`, never on PR builds, and only if the
+  # build step succeeded. Auth is via the container-scoped SAS token in
+  # the "CI Build Agent" variable group.
+  # ---------------------------------------------------------------------
+  - bash: |
+      set -euo pipefail
+
+      VERSION=$(jq -r .version "$(PLUGIN_DIR)/.claude-plugin/plugin.json")
+      PLUGIN_FILE="$(STAGING_DIR)/origo-bc.plugin"
+
+      if [[ ! -f "$PLUGIN_FILE" ]]; then
+        echo "ERROR: $PLUGIN_FILE not found" >&2
+        exit 1
+      fi
+
+      # Strip trailing slash off the base URL if present, so we can
+      # concatenate safely.
+      BASE="${STORAGE_BASE_URL%/}"
+      CONTAINER="$(BLOB_CONTAINER)"
+      PREFIX="$(BLOB_PREFIX)"
+
+      LATEST_URL="$BASE/$CONTAINER/$PREFIX/origo-bc.plugin"
+      VERSIONED_URL="$BASE/$CONTAINER/$PREFIX/origo-bc-$VERSION.plugin"
+
+      echo "Uploading $PLUGIN_FILE"
+      echo "  -> $LATEST_URL     (overwrite)"
+      echo "  -> $VERSIONED_URL  (immutable)"
+
+      # Azure CLI is preinstalled on ubuntu-latest agents.
+      # Account name is derived from the host part of StorageBaseURL so
+      # we don't need to duplicate it in the variable group.
+      ACCOUNT=$(echo "$BASE" | sed -E 's#https?://([^.]+)\..*#\1#')
+      echo "  account: $ACCOUNT"
+
+      # Latest (overwrite allowed)
+      az storage blob upload \
+        --account-name "$ACCOUNT" \
+        --container-name "$CONTAINER" \
+        --name "$PREFIX/origo-bc.plugin" \
+        --file "$PLUGIN_FILE" \
+        --sas-token "$STORAGE_SAS_TOKEN" \
+        --overwrite true \
+        --content-type "application/zip" \
+        --only-show-errors
+
+      # Versioned (fail if it already exists — we never rewrite a release)
+      if az storage blob upload \
+          --account-name "$ACCOUNT" \
+          --container-name "$CONTAINER" \
+          --name "$PREFIX/origo-bc-$VERSION.plugin" \
+          --file "$PLUGIN_FILE" \
+          --sas-token "$STORAGE_SAS_TOKEN" \
+          --content-type "application/zip" \
+          --only-show-errors 2>/tmp/az.err; then
+        echo "Uploaded versioned copy."
+      else
+        if grep -q "BlobAlreadyExists" /tmp/az.err; then
+          echo "NOTE: origo-bc-$VERSION.plugin already exists in blob storage."
+          echo "      Bump the version in plugin.json to publish a new release."
+        else
+          cat /tmp/az.err >&2
+          exit 1
+        fi
+      fi
+
+      echo ""
+      echo "Done. Stable download URLs:"
+      echo "  Latest   : $LATEST_URL"
+      echo "  Versioned: $VERSIONED_URL"
+    env:
+      # Map variable-group secrets into the step's environment so the
+      # SAS token doesn't end up in command lines / build logs.
+      STORAGE_BASE_URL: $(StorageBaseURL)
+      STORAGE_SAS_TOKEN: $(StorageSasToken)
+    displayName: Release origo-bc.plugin to public blob
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))

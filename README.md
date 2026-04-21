@@ -61,15 +61,45 @@ Published artifact: **`origo-bc-plugin`** (contains `origo-bc.plugin`).
 Download from the pipeline run page in Azure DevOps under **Artifacts →
 origo-bc-plugin**.
 
+## Stable download URLs (public)
+
+On every successful push to `main`, the pipeline also uploads the built
+plugin to the public Origo blob so colleagues can download it without
+needing Azure DevOps access:
+
+- **Latest** (always the newest release):
+  <https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin>
+- **Versioned** (immutable, one per version in `plugin.json`):
+  `https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-<version>.plugin`
+
+The upload step uses the `CI Build Agent` variable group in Azure DevOps
+(`StorageBaseURL` + `StorageSasToken`). The versioned copy is never
+overwritten — bump `version` in `plugin.json` to publish a new release.
+
 ## Cutting a release
 
 1. Bump `plugins/origo-bc/.claude-plugin/plugin.json` → `version`
    (semver).
 2. Add a new section to `CHANGELOG.md` (newest at the top, dated).
-3. Commit, push to `main`. CI produces the artifact; grab it and share
-   with colleagues, or attach it manually to a DevOps release.
+3. Commit, push to `main`. CI validates, builds, publishes the pipeline
+   artifact, and uploads both `origo-bc.plugin` (latest) and
+   `origo-bc-<version>.plugin` (immutable) to the public blob above.
 
 ## Installing the produced plugin
+
+Colleagues can either download straight from the stable URL:
+
+```
+https://origopublic.blob.core.windows.net/resources/mcp/origo-bc.plugin
+```
+
+…or grab a specific version:
+
+```
+https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin
+```
+
+Then install it:
 
 - **Cowork:** Settings → Plugins → Install from file → pick
   `origo-bc.plugin`. Or drop the file into a chat and send; the install
