@@ -339,8 +339,9 @@
         <div class="mode">
           <h3>Code <span class="badge">Þróun</span></h3>
           <p>
-            Að skrifa AL-kóða, búa til Cloud Events
-            integrationir, keyra CLI-skipanir. Uppsetning með
+            Að skrifa kóða — AL, C#, Python, TypeScript, PowerShell eða
+            annað — t.d. integrationir við Cloud Events eða önnur
+            BC-verkefni úr skipanaglugga. Uppsetning með
             <code>claude plugin marketplace add</code>.
           </p>
           <a class="jump" href="#code">Uppsetning fyrir Code &rarr;</a>
@@ -456,16 +457,18 @@ claude plugin install origo-bc@origo</code></pre>
         <code>claude plugin uninstall origo-bc</code>.
       </p>
 
-      <h3>Bætir við Cloud Events fyrir AL-þróun</h3>
+      <h3>Bætir við Cloud Events-þekkingu</h3>
       <p>
-        Ef þú ert að skrifa AL-kóða sem notar <strong>Cloud Events</strong>
-        viðbótina hjá Origo, þá þarftu líka Cloud Events-þekkingarregluna.
-        Hún lýsir atburðakerfinu (hook-point-um, payload-sniði,
-        uppsetningarreglum) og leiðir Claude gegnum rétt mynstur.
+        <strong>Cloud Events</strong> er vefþjónusta Origo sem hægt er
+        að kalla í úr hvaða forritunarmáli sem styður HTTP og OAuth —
+        C#, Python, JavaScript/TypeScript, AL, PowerShell, Go, Java,
+        eða hvað annað sem hentar. Ef þú ert að skrifa slíka
+        integration er ráðlagt að hafa Cloud Events-þekkingarregluna
+        virkjaða; hún lýsir endapunktunum, atburðagerðum, payload-sniði
+        og auðkenningu, og leiðir Claude í gegnum rétt mynstur óháð
+        forritunarmáli.
       </p>
-      <p>
-        Reglan liggur á:
-      </p>
+      <p>Reglan liggur á:</p>
       <div class="url-row">
         <a href="https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md" target="_blank" rel="noopener">https://origopublic.blob.core.windows.net/help/Cloud Events/bc27/en-US/SKILL.md</a>
       </div>
@@ -783,8 +786,9 @@ claude plugin install origo-bc@origo</code></pre>
         <div class="mode">
           <h3>Code <span class="badge">Development</span></h3>
           <p>
-            Writing AL code, building Cloud Events integrations, running
-            CLI commands. Install with
+            Writing code — AL, C#, Python, TypeScript, PowerShell, or
+            anything else — for Cloud Events integrations or other
+            BC-related work from the terminal. Install with
             <code>claude plugin marketplace add</code>.
           </p>
           <a class="jump" href="#code">Install for Code &rarr;</a>
@@ -897,13 +901,16 @@ claude plugin install origo-bc@origo</code></pre>
         To remove: <code>claude plugin uninstall origo-bc</code>.
       </p>
 
-      <h3>Add Cloud Events for AL development</h3>
+      <h3>Add the Cloud Events skill</h3>
       <p>
-        If you're writing AL code that uses Origo's <strong>Cloud
-        Events</strong> extension, you'll also want the Cloud Events
-        knowledge skill. It documents the event system (hook points,
-        payload shapes, setup rules) and guides Claude through the
-        right patterns.
+        <strong>Cloud Events</strong> is an Origo web service you can
+        call from any language that speaks HTTP and OAuth — C#, Python,
+        JavaScript/TypeScript, AL, PowerShell, Go, Java, whatever fits
+        your stack. If you're writing an integration against it, keep
+        the Cloud Events skill loaded; it documents the endpoints, event
+        types, payload shapes, and authentication, and guides Claude
+        through the right patterns regardless of the language you're
+        coding in.
       </p>
       <p>The skill lives at:</p>
       <div class="url-row">

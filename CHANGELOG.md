@@ -45,11 +45,14 @@ The plugin follows [semantic versioning](https://semver.org/).
   section (`#cowork`, `#code`). Three-card decision block at the top
   helps users pick the right path before they read instructions that
   don't apply to them.
-- Code section points AL developers to the
+- Code section points integration developers at the
   <code>bc-cloud-events</code> skill
   (<https://origopublic.blob.core.windows.net/help/Cloud%20Events/bc27/en-US/SKILL.md>)
   and explains that Claude loads it automatically through the
-  remote-loader entry in MCP-Skills once BC is connected.
+  remote-loader entry in MCP-Skills once BC is connected. Wording
+  clarifies that Cloud Events is a web service callable from any
+  language with HTTP + OAuth (C#, Python, TypeScript, AL, PowerShell,
+  Go, Java, etc.), not an AL-specific extension.
 - New prerequisite section *Entra App Registration* walks through:
   (1) creating the app in Azure portal (Entra ID → App registrations),
   copying Tenant ID / Client ID, generating a client secret;
