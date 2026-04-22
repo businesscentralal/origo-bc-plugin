@@ -93,9 +93,14 @@ steps:
 
   - bash: |
       set -euo pipefail
+      bash scripts/build-cowork-plugin.sh "$(PLUGIN_DIR)" "$(STAGING_DIR)"
+    displayName: Build origo-bc-cowork.plugin (skills-only)
+
+  - bash: |
+      set -euo pipefail
       VERSION=$(jq -r .version "$(PLUGIN_DIR)/.claude-plugin/plugin.json")
       echo "##vso[build.updatebuildnumber]origo-bc $VERSION + $(Build.SourceBranchName) $(Build.SourceVersion)"
-      echo "Produced origo-bc.plugin for version $VERSION"
+      echo "Produced origo-bc.plugin + origo-bc-cowork.plugin for version $VERSION"
       ls -la "$(STAGING_DIR)"
     displayName: Annotate run with plugin version
 
@@ -187,6 +192,77 @@ steps:
       STORAGE_BASE_URL: $(StorageBaseURL)
       STORAGE_SAS_TOKEN: $(StorageSasToken)
     displayName: Release origo-bc.plugin to public blob
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+  # ---------------------------------------------------------------------
+  # Release step — upload Cowork (skills-only) plugin to public blob
+  #
+  # Same pattern as the full plugin above but for the lightweight
+  # variant that can be drag-and-dropped into Cowork's "Upload plugin"
+  # dialog. Contains only knowledge skills (no scripts or setup wizard).
+  # ---------------------------------------------------------------------
+  - bash: |
+      set -euo pipefail
+
+      VERSION=$(jq -r .version "$(PLUGIN_DIR)/.claude-plugin/plugin.cowork.json")
+      PLUGIN_FILE="$(STAGING_DIR)/origo-bc-cowork.plugin"
+
+      if [[ ! -f "$PLUGIN_FILE" ]]; then
+        echo "ERROR: $PLUGIN_FILE not found" >&2
+        exit 1
+      fi
+
+      BASE="${STORAGE_BASE_URL%/}"
+      CONTAINER="$(BLOB_CONTAINER)"
+      PREFIX="$(BLOB_PREFIX)"
+      ACCOUNT=$(echo "$BASE" | sed -E 's#https?://([^.]+)\..*#\1#')
+
+      LATEST_URL="$BASE/$CONTAINER/$PREFIX/origo-bc-cowork.plugin"
+      VERSIONED_URL="$BASE/$CONTAINER/$PREFIX/origo-bc-cowork-$VERSION.plugin"
+
+      echo "Uploading $PLUGIN_FILE"
+      echo "  -> $LATEST_URL     (overwrite)"
+      echo "  -> $VERSIONED_URL  (immutable)"
+
+      # Latest (overwrite allowed)
+      az storage blob upload \
+        --account-name "$ACCOUNT" \
+        --container-name "$CONTAINER" \
+        --name "$PREFIX/origo-bc-cowork.plugin" \
+        --file "$PLUGIN_FILE" \
+        --sas-token "$STORAGE_SAS_TOKEN" \
+        --overwrite true \
+        --content-type "application/zip" \
+        --only-show-errors
+
+      # Versioned (fail if it already exists)
+      if az storage blob upload \
+          --account-name "$ACCOUNT" \
+          --container-name "$CONTAINER" \
+          --name "$PREFIX/origo-bc-cowork-$VERSION.plugin" \
+          --file "$PLUGIN_FILE" \
+          --sas-token "$STORAGE_SAS_TOKEN" \
+          --content-type "application/zip" \
+          --only-show-errors 2>/tmp/az-cowork.err; then
+        echo "Uploaded versioned copy."
+      else
+        if grep -q "BlobAlreadyExists" /tmp/az-cowork.err; then
+          echo "NOTE: origo-bc-cowork-$VERSION.plugin already exists in blob storage."
+          echo "      Bump the version in plugin.cowork.json to publish a new release."
+        else
+          cat /tmp/az-cowork.err >&2
+          exit 1
+        fi
+      fi
+
+      echo ""
+      echo "Done. Cowork download URLs:"
+      echo "  Latest   : $LATEST_URL"
+      echo "  Versioned: $VERSIONED_URL"
+    env:
+      STORAGE_BASE_URL: $(StorageBaseURL)
+      STORAGE_SAS_TOKEN: $(StorageSasToken)
+    displayName: Release origo-bc-cowork.plugin to public blob
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
   # ---------------------------------------------------------------------
