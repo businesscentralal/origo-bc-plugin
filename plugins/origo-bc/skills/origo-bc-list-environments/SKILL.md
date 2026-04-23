@@ -9,7 +9,7 @@ description: >
   Claude Desktop MCP config file and shows a table of every `bc-*` entry
   with its resolved default company (if any).
 metadata:
-  version: "0.1.0"
+  version: "0.3.0"
   author: "Origo hf."
 ---
 
@@ -28,20 +28,22 @@ Reads the Cowork MCP config and lists every `bc-*` entry.
 3. For each entry, extract:
    - The nickname (key after `bc-` prefix).
    - The default company GUID, if present (third element of `args`).
-   - Whether the blob is DPAPI-wrapped (`dpapi:`) or raw (`plain:`).
+   - Whether the blob is DPAPI-wrapped (`dpapi:` prefix) or raw AES
+     ciphertext (no prefix — used on macOS/Linux).
 4. Render a table:
 
    | Nickname | Default company | Auth format | Script path |
    | -------- | --------------- | ----------- | ----------- |
    | kappi    | `AAAA-...`      | dpapi       | `...\OrigoBC\dynamics-is.js` |
-   | cronus   | _(none)_        | dpapi       | `...\OrigoBC\dynamics-is.js` |
+   | cronus   | _(none)_        | aes         | `...\OrigoBC\dynamics-is.js` |
 
 5. If no `bc-*` entries exist, tell the user and suggest `/origo-bc-setup`.
 
 ## Guardrails
 
-- **Never** print the `dpapi:` / `plain:` blob itself. Only report its
-  length and format prefix.
+- **Never** print the connection blob itself. Only report its length and
+  format (`dpapi` for DPAPI-wrapped, `aes` for raw AES ciphertext, or
+  `plain` for legacy blobs that need migration via `/origo-bc-update-env`).
 - Don't modify the config file — this command is read-only.
 - If the config file is missing or malformed, report the failure and stop;
   don't attempt to repair it.

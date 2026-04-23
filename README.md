@@ -20,10 +20,11 @@ artifact on every push to `main`.
 │       │   ├── origo-bc-setup/SKILL.md
 │       │   ├── origo-bc-add-env/SKILL.md
 │       │   ├── origo-bc-list-environments/SKILL.md
+│       │   ├── origo-bc-update-env/SKILL.md
 │       │   └── origo-bc-switch-company/SKILL.md
 │       └── scripts/
 │           ├── dynamics-is.js
-│           ├── Create-PlainConnectionString.ps1
+│           ├── Create-ConnectionString.ps1
 │           └── create-connection-string.js
 ├── scripts/
 │   ├── validate-plugin.sh        # syntax + structure checks

@@ -3,6 +3,37 @@
 All notable changes to the `origo-bc` Cowork plugin are documented here.
 The plugin follows [semantic versioning](https://semver.org/).
 
+## [0.3.0] — 2026-04-23
+
+### Breaking — connection format
+
+- **`plain:<base64>` connection blobs are no longer accepted.** The MCP
+  server's `resolveConn` now rejects `plain:` prefixed blobs with a
+  migration error directing the user to re-run the connection script.
+- **AES-256-GCM is the only supported encryption format.** Connection blobs
+  are now encrypted server-side via the `encrypt_data` endpoint before
+  being stored locally.
+- Existing users **must re-authenticate** by running
+  `Create-ConnectionString.ps1` (Windows) or
+  `node create-connection-string.js` (macOS/Linux) and pasting the new blob
+  into their config. Use `/origo-bc-update-env` for guided migration.
+
+### Changed
+
+- `Create-PlainConnectionString.ps1` renamed to `Create-ConnectionString.ps1`
+  — the script now calls the `encrypt_data` MCP endpoint instead of
+  producing a `plain:<base64>` blob.
+- `create-connection-string.js` rewritten to call `encrypt_data` via HTTPS
+  instead of producing `plain:<base64>`.
+- All skill files updated to remove `plain:` references and document the
+  AES-256-GCM-only flow.
+
+### Added
+
+- New `/origo-bc-update-env` skill — re-generates the connection blob for
+  an existing `bc-<nickname>` entry. Handles v0.3 migration (detects old
+  `plain:` blobs) and routine credential rotation.
+
 ## Unreleased
 
 ### Distribution (GitHub mirror)

@@ -2,22 +2,26 @@
 /**
  * create-connection-string.js
  *
- * Cross-platform helper that builds a "plain:<base64>" connection blob for
- * the BC Origo MCP server. On Windows the result is additionally wrapped
- * with DPAPI (CurrentUser scope) via a child PowerShell process so the
- * config file at rest is bound to this user + machine. On Mac/Linux the
- * raw "plain:<base64>" string is emitted and the user is warned to protect
- * it with filesystem permissions (or to use a secret manager of their
- * choice such as macOS Keychain or libsecret).
+ * Cross-platform helper that builds an AES-256-GCM encrypted connection blob
+ * for the BC Origo MCP server by calling the server's encrypt_data tool
+ * (no authentication required). On Windows the AES ciphertext is additionally
+ * wrapped with DPAPI (CurrentUser scope) so the config file at rest is bound
+ * to this user + machine. On Mac/Linux the raw AES ciphertext is emitted
+ * and the user is warned to protect it with filesystem permissions.
  *
- * No HTTPS call is made. The server's resolveConn accepts "plain:<base64>"
- * directly and decodes it server-side — see api/mcp/index.js.
+ * Security properties:
+ *   At rest (config file): DPAPI + AES-256-GCM (double layer on Windows).
+ *   In transit to server:  TLS + AES-256-GCM.
+ *   At server:             decrypted only in memory by resolveConn.
+ *
+ * The legacy "plain:<base64>" format is no longer supported.
  *
  * Usage:
  *   node create-connection-string.js \
  *     --tenant 'dynamics.is' \
  *     --client '<guid>' \
  *     --environment 'UAT' \
+ *     [--mcp-url 'https://dynamics.is/api/mcp'] \
  *     [--no-dpapi]
  *
  * The client secret is prompted interactively (hidden input) so it never
@@ -30,14 +34,17 @@
 
 "use strict";
 
+const https          = require("https");
 const readline       = require("readline");
 const { spawnSync }  = require("child_process");
 const { Writable }   = require("stream");
 
+const DEFAULT_MCP_URL = "https://dynamics.is/api/mcp";
+
 // ── Argument parsing ─────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const out = { environment: "UAT", noDpapi: false };
+  const out = { environment: "UAT", noDpapi: false, mcpUrl: DEFAULT_MCP_URL };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -45,11 +52,13 @@ function parseArgs(argv) {
       case "--tenant":      out.tenant      = next(); break;
       case "--client":      out.client      = next(); break;
       case "--environment": out.environment = next(); break;
+      case "--mcp-url":     out.mcpUrl      = next(); break;
       case "--no-dpapi":    out.noDpapi     = true;   break;
       case "--help":
       case "-h":
         process.stderr.write(
-          "Usage: node create-connection-string.js --tenant <id> --client <guid> [--environment <name>] [--no-dpapi]\n"
+          "Usage: node create-connection-string.js --tenant <id> --client <guid> " +
+          "[--environment <name>] [--mcp-url <url>] [--no-dpapi]\n"
         );
         process.exit(0);
       default:
@@ -105,8 +114,8 @@ function promptSecret(label) {
 // ── DPAPI wrap via a child PowerShell process (Windows only) ────────────────
 // We call System.Security.Cryptography.ProtectedData.Protect with
 // CurrentUser scope — same primitive stdio-proxy.js unwraps at startup.
-// The plaintext is piped via stdin (not an argument) so it never shows up
-// in Task Manager or ETW command-line logs.
+// The AES ciphertext is piped via stdin (not an argument) so it never shows
+// up in Task Manager or ETW command-line logs.
 
 function dpapiWrap(plainText) {
   const script = `
@@ -157,6 +166,51 @@ function copyToClipboard(text) {
   }
 }
 
+// ── Call the MCP server's encrypt_data tool ─────────────────────────────────
+// No authentication headers are needed — encrypt_data is an open tool.
+// It encrypts the payload with AES-256-GCM using the server's MCP_ENCRYPTION_KEY.
+
+function encryptViaServer(mcpUrl, plaintext) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: "encrypt_data", arguments: { plaintext } },
+    });
+
+    const url = new URL(mcpUrl);
+    const options = {
+      hostname: url.hostname,
+      port:     url.port || 443,
+      path:     url.pathname,
+      method:   "POST",
+      headers:  { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+    };
+
+    const req = https.request(options, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        const raw = Buffer.concat(chunks).toString("utf8");
+        try {
+          const json = JSON.parse(raw);
+          if (json.error) return reject(new Error(`encrypt_data error: ${json.error.message}`));
+          const inner = JSON.parse(json.result.content[0].text);
+          if (!inner.ciphertext) return reject(new Error("encrypt_data did not return a ciphertext field"));
+          resolve(inner.ciphertext);
+        } catch (e) {
+          reject(new Error(`Failed to parse encrypt_data response: ${e.message}`));
+        }
+      });
+    });
+
+    req.on("error", (e) => reject(new Error(`Failed to reach MCP server at ${mcpUrl}: ${e.message}`)));
+    req.write(body);
+    req.end();
+  });
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 (async function main() {
@@ -178,28 +232,39 @@ function copyToClipboard(text) {
   });
   secret = null;
 
-  const plainValue = "plain:" + Buffer.from(payload, "utf8").toString("base64");
+  // Call the server to encrypt the credentials with AES-256-GCM
+  process.stderr.write(`[create-connection-string] Calling encrypt_data at ${opts.mcpUrl} ...\n`);
+
+  let aesCiphertext;
+  try {
+    aesCiphertext = await encryptViaServer(opts.mcpUrl, payload);
+  } catch (e) {
+    process.stderr.write(`[create-connection-string] ${e.message}\n`);
+    process.exit(1);
+  }
+
+  process.stderr.write("[create-connection-string] Credentials encrypted successfully (AES-256-GCM).\n");
 
   let finalValue;
   let wrapped = false;
 
   if (process.platform === "win32" && !opts.noDpapi) {
     try {
-      finalValue = dpapiWrap(plainValue);
+      finalValue = dpapiWrap(aesCiphertext);
       wrapped = true;
     } catch (e) {
       process.stderr.write(`[create-connection-string] ${e.message}\n`);
-      process.stderr.write("[create-connection-string] Falling back to un-wrapped plain:<base64>.\n");
-      finalValue = plainValue;
+      process.stderr.write("[create-connection-string] Falling back to un-wrapped AES ciphertext.\n");
+      finalValue = aesCiphertext;
     }
   } else {
-    finalValue = plainValue;
+    finalValue = aesCiphertext;
   }
 
   const copied = copyToClipboard(finalValue);
   if (copied) {
     process.stderr.write(
-      `[create-connection-string] ${wrapped ? "dpapi:" : "plain:"}<...> value copied to clipboard.\n`
+      `[create-connection-string] ${wrapped ? "dpapi:" : "AES"}<...> value copied to clipboard.\n`
     );
   } else {
     process.stderr.write("[create-connection-string] Clipboard unavailable; printing value to stdout:\n");
@@ -208,7 +273,7 @@ function copyToClipboard(text) {
 
   if (!wrapped) {
     process.stderr.write(
-      "[create-connection-string] WARNING: blob is NOT bound to this machine/user.\n" +
+      "[create-connection-string] NOTE: blob is AES-encrypted but NOT bound to this machine/user.\n" +
       "[create-connection-string] Protect the config file with filesystem permissions (chmod 600 on *nix)\n" +
       "[create-connection-string] or store the value in a platform secret manager.\n"
     );

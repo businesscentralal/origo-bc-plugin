@@ -9,7 +9,7 @@ description: >
   MCP-Skills, MCP-Prompts and UBL Templates namespaces, and which connection
   formats are accepted by the server.
 metadata:
-  version: "0.1.0"
+  version: "0.3.0"
   author: "Origo hf."
 ---
 
@@ -117,53 +117,60 @@ Prompt record shape:
 When a user's request matches a prompt: fetch that prompt, fetch every
 referenced skill, then execute the `body`.
 
-## MCP connection formats — two options
+## MCP connection format — AES-256-GCM
 
-The server's `resolveConn` accepts two formats for `encryptedConn` (whether
-the blob arrives as the `x-encrypted-conn` header or as a tool argument):
+The server's `resolveConn` accepts **only** AES-256-GCM encrypted blobs.
+`plain:<base64>` blobs are **rejected** as of v0.3.0 — the server returns a
+migration error directing the user to re-run the connection script.
 
-### Option A — `plain:<base64>` (preferred for new installs)
+### How the blob is produced
 
-Base64-encoded JSON `{tenantId, clientId, clientSecret, environment}`. No
-HTTPS setup round-trip, no `MCP_ENCRYPTION_KEY` required server-side.
-
-**How to build the blob:**
-
-- Windows: `.\Create-PlainConnectionString.ps1 -TenantId ... -ClientId ... -Environment ...`
-  → returns `dpapi:<base64>` (the `plain:` payload DPAPI-wrapped to the
-  current Windows user/machine).
-- macOS / Linux: `node create-connection-string.js --tenant ... --client ... --environment ...`
-  → returns `plain:<base64>` with no DPAPI wrap; protect the config file
-  with `chmod 600` or a platform secret manager.
+1. The helper script (`Create-ConnectionString.ps1` on Windows,
+   `create-connection-string.js` elsewhere) collects tenant, client,
+   secret, and environment.
+2. It calls the `encrypt_data` endpoint on the MCP server
+   (`https://dynamics.is/api/mcp`) via JSON-RPC — no authentication
+   headers required.
+3. The server encrypts the JSON with AES-256-GCM using `MCP_ENCRYPTION_KEY`
+   and returns base64 ciphertext.
+4. On Windows, the script wraps the ciphertext with DPAPI (bound to the
+   current user and machine) before storing it.
 
 **Protection in practice:**
 
-- In transit: TLS from proxy to server.
-- At rest: DPAPI on Windows (bound to user + machine), filesystem
-  permissions elsewhere.
-- No double encryption, no server key to leak.
+- In transit: TLS from helper to server.
+- At rest: DPAPI on Windows (user + machine bound), filesystem permissions
+  elsewhere (`chmod 600`).
+- Server-side: `MCP_ENCRYPTION_KEY` is a 256-bit key stored as an
+  environment variable on the Azure Function.
 
-### Option B — AES-256-GCM ciphertext (legacy, still supported)
+### Scripts
 
-Calls `encrypt_data` on the server with plaintext JSON → receives base64
-ciphertext → DPAPI-wraps locally on Windows.
+| Platform | Command | Output |
+| -------- | ------- | ------ |
+| Windows  | `.\Create-ConnectionString.ps1 -TenantId ... -ClientId ... -Environment ...` | `dpapi:<base64>` |
+| macOS / Linux | `node create-connection-string.js --tenant ... --client ... --environment ...` | Raw AES ciphertext (base64) |
 
-Use only for environments that already have configured `dpapi:<...>` blobs
-containing AES ciphertext, or when the user explicitly requests a second
-encryption layer.
+Both scripts prompt for the client secret with hidden input and copy the
+result to the clipboard.
 
-### Choosing
+### v0.3 migration — existing users
 
-| Situation                       | Choice              |
-| ------------------------------- | ------------------- |
-| New install on Windows          | A (plain: + DPAPI)  |
-| New install on macOS / Linux    | A (plain: + chmod)  |
-| Existing working config         | B — leave it alone  |
-| Server without encryption key   | A                   |
+If a user's existing `bc-*` entry uses a `plain:<base64>` blob, it will
+stop working after the server update. The error message from `resolveConn`
+is:
 
-The `stdio-proxy.js` bridge is format-agnostic — it forwards whatever string
-it has in `x-encrypted-conn`. The server branches on the prefix (`plain:`
-decodes base64, otherwise AES-decrypts).
+> `plain: connection strings are no longer supported. Re-run Create-ConnectionString.ps1 (Windows) or create-connection-string.js to generate an AES-256-GCM encrypted blob.`
+
+**Fix:** Run `/origo-bc-update-env` to re-generate the blob for the
+affected entry. The skill pre-fills tenant/client/environment from the
+existing config and walks the user through the re-authentication.
+
+### Choosing a format (no longer applies)
+
+There is only one format. All new and existing installs must use
+AES-256-GCM encrypted blobs. The `stdio-proxy.js` bridge forwards whatever
+string it has in `x-encrypted-conn`; the server decrypts it.
 
 ## Update rules
 

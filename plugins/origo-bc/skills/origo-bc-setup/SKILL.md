@@ -7,10 +7,11 @@ description: >
   the BC MCP server, or otherwise establish their first BC tenant inside
   Cowork. Copies the bundled scripts to `%USERPROFILE%\OrigoBC\`, collects
   tenant / client / environment details, asks the user to produce the
-  connection blob in their own terminal, then writes a new entry into the
+  connection blob (AES-256-GCM encrypted via the server's `encrypt_data`
+  endpoint) in their own terminal, then writes a new entry into the
   Cowork MCP config.
 metadata:
-  version: "0.1.0"
+  version: "0.3.0"
   author: "Origo hf."
 ---
 
@@ -29,7 +30,7 @@ only by the PowerShell / Node helper running in the user's own terminal.
    the connection cannot run.
 2. Creates `%USERPROFILE%\OrigoBC\` if missing and copies the three bundled
    scripts from the plugin into that folder (`dynamics-is.js`,
-   `Create-PlainConnectionString.ps1`, `create-connection-string.js`).
+   `Create-ConnectionString.ps1`, `create-connection-string.js`).
 3. Asks the user (one question at a time via `AskUserQuestion`) for:
    - A short nickname for this tenant (used as MCP key `bc-<nickname>`).
    - Azure AD **tenant ID**.
@@ -38,9 +39,10 @@ only by the PowerShell / Node helper running in the user's own terminal.
    - Optional **default company ID** (GUID).
 4. Prints a single ready-to-paste PowerShell one-liner the user runs in
    their own terminal. On non-Windows platforms it prints the equivalent
-   `node create-connection-string.js` command. These helpers prompt for the
-   secret with a hidden SecureString / readline prompt and copy the final
-   `dpapi:<...>` or `plain:<...>` value to the clipboard.
+   `node create-connection-string.js` command. These helpers call the
+   server's `encrypt_data` endpoint to produce an AES-256-GCM encrypted
+   blob, then DPAPI-wrap it on Windows. The final value is copied to the
+   clipboard.
 5. Asks the user to paste back the value from the clipboard (just the
    opaque blob).
 6. Edits the Cowork / Claude Desktop MCP config
@@ -70,8 +72,8 @@ only by the PowerShell / Node helper running in the user's own terminal.
 - **Never** ask for the client secret in chat. If the user volunteers it,
   refuse to store it and instruct them to paste it only into the
   PowerShell / Node prompt.
-- **Never** transmit the `plain:<base64>` payload to any service. It
-  contains the secret in recoverable form.
+- **Never** attempt to decrypt or inspect the AES blob. It is opaque
+  ciphertext that only the server can decrypt.
 - If `%USERPROFILE%\OrigoBC\dynamics-is.js` already exists, ask before
   overwriting; otherwise just add the new config entry (use `/origo-bc-add-env`
   for that flow when the install is clearly already present).
@@ -110,7 +112,7 @@ On Windows (via `Bash` tool):
 ```bash
 mkdir -p "$USERPROFILE/OrigoBC"
 cp "${CLAUDE_PLUGIN_ROOT}/scripts/dynamics-is.js" "$USERPROFILE/OrigoBC/"
-cp "${CLAUDE_PLUGIN_ROOT}/scripts/Create-PlainConnectionString.ps1" "$USERPROFILE/OrigoBC/"
+cp "${CLAUDE_PLUGIN_ROOT}/scripts/Create-ConnectionString.ps1" "$USERPROFILE/OrigoBC/"
 cp "${CLAUDE_PLUGIN_ROOT}/scripts/create-connection-string.js" "$USERPROFILE/OrigoBC/"
 ```
 
@@ -132,7 +134,7 @@ Windows PowerShell (preferred):
 
 ```powershell
 cd $env:USERPROFILE\OrigoBC
-.\Create-PlainConnectionString.ps1 `
+.\Create-ConnectionString.ps1 `
   -TenantId     '<tenant>' `
   -ClientId     '<client>' `
   -Environment  '<env>'
@@ -153,7 +155,19 @@ copy the final value to the clipboard.
 
 ### Step 5 — Receive the blob
 
-Ask the user to paste the value (it starts with either `dpapi:` or
-`plain:`). Do not print it back. Do not echo it in tool calls that surface
-the content to the UI beyond what is strictly required to write it into
+Ask the user to paste the value (it starts with `dpapi:` on Windows or is
+raw base64 on other platforms). Do not print it back. Do not echo it in
+tool calls that surface the content to the UI beyond what is strictly
+required to write it into the config file.
+
+### Step 6 — Write the MCP config entry
+
+Edit the Cowork / Claude Desktop MCP config and add the `bc-<nickname>`
+entry as described in "What this command does" step 6 above.
+
+Then tell the user to **restart Cowork** and verify with:
+
+```
+mcp__bc-<nickname>__list_companies
+```
 the config fi

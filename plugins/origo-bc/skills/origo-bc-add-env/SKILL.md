@@ -9,7 +9,7 @@ description: >
   under `%USERPROFILE%\OrigoBC\` and only appends a new entry to the Cowork
   MCP config.
 metadata:
-  version: "0.1.0"
+  version: "0.3.0"
   author: "Origo hf."
 ---
 
@@ -47,9 +47,10 @@ Before doing anything:
    - Tenant ID, client ID, environment.
    - Optional default company GUID.
 3. Print the helper command for the user to run in their own terminal
-   (`Create-PlainConnectionString.ps1` on Windows, `create-connection-string.js`
+   (`Create-ConnectionString.ps1` on Windows, `create-connection-string.js`
    elsewhere) with the tenant / client / environment pre-filled.
-4. Receive the pasted `dpapi:` / `plain:` blob.
+4. Receive the pasted blob (AES-256-GCM ciphertext, DPAPI-wrapped on
+   Windows).
 5. Append a new `bc-<nickname>` entry to the Cowork MCP config.
 6. Prompt the user to restart Cowork and verify with
    `mcp__bc-<nickname>__list_companies`.
@@ -65,7 +66,7 @@ chosen nickname collides, ask again.
 Same as `/origo-bc-setup`:
 
 - Never prompt for the client secret in chat.
-- Never transmit the blob anywhere other than the local config file.
+- Never attempt to decrypt or inspect the AES blob.
 - Atomic write of the config (temp file + rename).
 
 ## Step-by-step
@@ -93,10 +94,55 @@ optional default company GUID.
 
 ### Step 4 — Generate the blob
 
-Windows:
+Windows PowerShell:
 
 ```powershell
 cd $env:USERPROFILE\OrigoBC
-.\Create-PlainConnectionString.ps1 `
+.\Create-ConnectionString.ps1 `
   -TenantId    '<tenant>' `
+  -ClientId    '<client>' `
+  -Environment '<env>'
+```
+
+macOS / Linux:
+
+```bash
+cd ~/OrigoBC
+node create-connection-string.js \
+  --tenant      '<tenant>' \
+  --client      '<client>' \
+  --environment '<env>'
+```
+
+Tell the user the helper will prompt for the client secret with hidden
+input and copy the final AES-encrypted blob to the clipboard.
+
+### Step 5 — Receive the blob
+
+Ask the user to paste the value (`dpapi:` on Windows, raw base64
+elsewhere). Do not print it back. Do not echo it in tool calls that
+surface the content to the UI.
+
+### Step 6 — Write the MCP config entry
+
+Add a new entry to the Cowork MCP config:
+
+```json
+"bc-<nickname>": {
+  "command": "node",
+  "args": [
+    "<userprofile>\\OrigoBC\\dynamics-is.js",
+    "<pasted-blob>",
+    "<default-company-guid>"
+  ]
+}
+```
+
+If the user did not provide a default company GUID, omit that argument.
+
+Tell the user to **restart Cowork** and verify with:
+
+```
+mcp__bc-<nickname>__list_companies
+```
   -ClientId    '<client>'

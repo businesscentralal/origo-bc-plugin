@@ -14,10 +14,9 @@ On first use of `/origo-bc-setup`, the plugin copies its bundled scripts to
 ```
 
 and writes a new entry into the Cowork / Claude Desktop MCP config pointing
-at `stdio-proxy.js`. A connection blob — either a DPAPI-wrapped `plain:`
-payload on Windows or a raw `plain:<base64>` elsewhere — is generated locally
-and stored in the MCP config args. Nothing is sent to `dynamics.is` during
-setup other than the OAuth calls the proxy makes when the first tool runs.
+at `stdio-proxy.js`. A connection blob — AES-256-GCM ciphertext produced by
+the server's `encrypt_data` endpoint, optionally DPAPI-wrapped on Windows —
+is generated locally and stored in the MCP config args.
 
 ## Components
 
@@ -31,11 +30,12 @@ directory.
 | Skill  | `origo-bc-cloud-events`                      | Loads the Cloud Events API authoring rules, message type catalog, and examples for MCP development. |
 | Skill  | `origo-bc-setup` (`/origo-bc-setup`)              | First-time connection wizard: copies scripts, collects credentials, writes the config entry. |
 | Skill  | `origo-bc-add-env` (`/origo-bc-add-env`)          | Adds an additional BC tenant / environment to an existing install.                           |
+| Skill  | `origo-bc-update-env` (`/origo-bc-update-env`)    | Re-generates the connection blob for an existing entry (migration, credential rotation).     |
 | Skill  | `origo-bc-list-environments` (`/origo-bc-list-environments`) | Lists every BC entry currently configured in the Cowork MCP config file.          |
 | Skill  | `origo-bc-switch-company` (`/origo-bc-switch-company`) | Swaps the default company GUID on an existing entry.                                    |
 | Script | `scripts/dynamics-is.js`                         | stdio ↔ HTTP bridge the MCP config launches per connection.                                  |
-| Script | `scripts/Create-PlainConnectionString.ps1`       | Windows PowerShell helper: builds `plain:<base64>` and DPAPI-wraps it.                       |
-| Script | `scripts/create-connection-string.js`            | Cross-platform Node helper that produces the same blob (DPAPI on Windows, raw elsewhere).    |
+| Script | `scripts/Create-ConnectionString.ps1`             | Windows PowerShell helper: encrypts credentials via `encrypt_data` endpoint, DPAPI-wraps the ciphertext. |
+| Script | `scripts/create-connection-string.js`            | Cross-platform Node helper that does the same via HTTPS (DPAPI on Windows, raw elsewhere).   |
 
 ## Prerequisites
 
@@ -60,8 +60,9 @@ will walk you through:
 2. Entering tenant ID, client ID, environment, and optional default company.
 3. Generating the connection blob in a PowerShell window (the client secret
    never passes through Claude's chat — it is prompted as a SecureString
-   directly by `Create-PlainConnectionString.ps1`).
-4. Pasting the resulting `dpapi:` / `plain:` value back into Claude.
+   directly by `Create-ConnectionString.ps1`).
+4. Pasting the resulting AES-256-GCM blob (`dpapi:`-wrapped on Windows,
+   raw base64 on macOS/Linux) back into Claude.
 5. Updating the Cowork MCP config and asking you to restart Cowork.
 
 After restart, `mcp__bc-<nickname>__*` tools become available. Test with

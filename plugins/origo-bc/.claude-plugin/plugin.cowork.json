@@ -1,6 +1,6 @@
 {
   "name": "origo-bc",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Origo BC Business Central integration — skills-only variant for Cowork upload.",
   "author": {
     "name": "Origo hf.",
