@@ -519,6 +519,63 @@ claude plugin install origo-bc@origo</code></pre>
         heimildarsamstæðum.
       </p>
 
+      <div class="card" style="margin-bottom:24px;">
+        <p style="margin:0 0 10px;"><strong>Lágmarksstilling eftir auðkenningarham</strong></p>
+        <table style="width:100%; font-size:13px; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:2px solid var(--line);">
+              <th style="padding:6px 8px;">Stilling</th>
+              <th style="padding:6px 8px;">MCP-þjónn<br><span style="font-weight:400;color:var(--muted);">(client credentials)</span></th>
+              <th style="padding:6px 8px;">Notandaaðgangur<br><span style="font-weight:400;color:var(--muted);">(device code)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;">Allow public client flows</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;"><strong>Já</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;">Client secret</td>
+              <td style="padding:6px 8px;"><strong>Já</strong></td>
+              <td style="padding:6px 8px;">—</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;">Redirect URI</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;">—</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;"><code>app_access</code> (Application)</td>
+              <td style="padding:6px 8px;"><strong>Skylda</strong></td>
+              <td style="padding:6px 8px;">—</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;"><code>Financials.ReadWrite.All</code> (Delegated)</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;"><strong>Skylda</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;"><code>user_impersonation</code> (Delegated)</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;"><strong>Skylda</strong></td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;"><code>User.Read</code> (Graph, Delegated)</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;">Valfrjálst</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin:10px 0 0; font-size:13px; color:var(--muted);">
+          Ef þú vilt styðja <em>bæði</em> hami á sömu skráningu (mælt
+          með) — bættu öllu við. Uppsetningin hér að neðan gerir einmitt
+          það. <code>offline_access</code> scope-ið (nauðsynlegt fyrir
+          device code refresh token) er óskað á <em>token-tíma</em>, ekki
+          í skráningunni sjálfri.
+        </p>
+      </div>
+
       <h3>1. Azure-hliðin — búa til app-skráningu</h3>
       <p>
         Við fylgjum staðalmynstri Microsoft fyrir
@@ -997,6 +1054,63 @@ claude plugin install origo-bc@origo</code></pre>
         <em>inside BC</em> as a Microsoft Entra Application with the
         right permission sets.
       </p>
+
+      <div class="card" style="margin-bottom:24px;">
+        <p style="margin:0 0 10px;"><strong>Minimum configuration by auth mode</strong></p>
+        <table style="width:100%; font-size:13px; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:2px solid var(--line);">
+              <th style="padding:6px 8px;">Setting</th>
+              <th style="padding:6px 8px;">MCP server<br><span style="font-weight:400;color:var(--muted);">(client credentials)</span></th>
+              <th style="padding:6px 8px;">User auth<br><span style="font-weight:400;color:var(--muted);">(device code)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;">Allow public client flows</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;"><strong>Yes</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;">Client secret</td>
+              <td style="padding:6px 8px;"><strong>Yes</strong></td>
+              <td style="padding:6px 8px;">—</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;">Redirect URI</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;">—</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;"><code>app_access</code> (Application)</td>
+              <td style="padding:6px 8px;"><strong>Required</strong></td>
+              <td style="padding:6px 8px;">—</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;"><code>Financials.ReadWrite.All</code> (Delegated)</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;"><strong>Required</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--line);">
+              <td style="padding:6px 8px;"><code>user_impersonation</code> (Delegated)</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;"><strong>Required</strong></td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;"><code>User.Read</code> (Graph, Delegated)</td>
+              <td style="padding:6px 8px;">—</td>
+              <td style="padding:6px 8px;">Optional</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin:10px 0 0; font-size:13px; color:var(--muted);">
+          To support <em>both</em> modes on the same registration
+          (recommended) — add everything. The walkthrough below does
+          exactly that. The <code>offline_access</code> scope (needed for
+          device code refresh tokens) is requested at <em>token time</em>,
+          not in the registration itself.
+        </p>
+      </div>
 
       <h3>1. Azure side — create the app registration</h3>
       <p>
