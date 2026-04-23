@@ -9,6 +9,17 @@
  * to this user + machine. On Mac/Linux the raw AES ciphertext is emitted
  * and the user is warned to protect it with filesystem permissions.
  *
+ * Two authentication flows are supported:
+ *
+ *   Client-secret flow (default):
+ *     Prompts for a client secret (hidden input). The connection blob
+ *     stores { tenantId, clientId, clientSecret, environment }.
+ *
+ *   Device-code flow (--device-code flag):
+ *     Initiates an OAuth 2.0 device code flow against Entra ID.
+ *     The user authenticates in a browser. The connection blob stores
+ *     { tenantId, clientId, refreshToken, environment }.
+ *
  * Security properties:
  *   At rest (config file): DPAPI + AES-256-GCM (double layer on Windows).
  *   In transit to server:  TLS + AES-256-GCM.
@@ -21,11 +32,14 @@
  *     --tenant 'dynamics.is' \
  *     --client '<guid>' \
  *     --environment 'UAT' \
+ *     [--device-code] \
  *     [--mcp-url 'https://dynamics.is/api/mcp'] \
  *     [--no-dpapi]
  *
- * The client secret is prompted interactively (hidden input) so it never
- * appears on the command line or in shell history.
+ * With --device-code the secret prompt is skipped; the user authenticates
+ * interactively in a browser instead. Without --device-code the client
+ * secret is prompted with hidden input so it never appears on the command
+ * line or in shell history.
  *
  * Output: the final token is copied to the OS clipboard when possible,
  * otherwise printed to stdout. Informational messages go to stderr so
@@ -44,7 +58,7 @@ const DEFAULT_MCP_URL = "https://dynamics.is/api/mcp";
 // ── Argument parsing ─────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const out = { environment: "UAT", noDpapi: false, mcpUrl: DEFAULT_MCP_URL };
+  const out = { environment: "UAT", noDpapi: false, deviceCode: false, mcpUrl: DEFAULT_MCP_URL };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -54,11 +68,12 @@ function parseArgs(argv) {
       case "--environment": out.environment = next(); break;
       case "--mcp-url":     out.mcpUrl      = next(); break;
       case "--no-dpapi":    out.noDpapi     = true;   break;
+      case "--device-code": out.deviceCode  = true;   break;
       case "--help":
       case "-h":
         process.stderr.write(
           "Usage: node create-connection-string.js --tenant <id> --client <guid> " +
-          "[--environment <name>] [--mcp-url <url>] [--no-dpapi]\n"
+          "[--environment <name>] [--device-code] [--mcp-url <url>] [--no-dpapi]\n"
         );
         process.exit(0);
       default:
@@ -211,26 +226,132 @@ function encryptViaServer(mcpUrl, plaintext) {
   });
 }
 
+// ── HTTPS POST helper (returns parsed JSON) ─────────────────────────────────
+
+function httpsPost(urlStr, formBody) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlStr);
+    const encoded = typeof formBody === "string" ? formBody
+      : Object.entries(formBody).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+    const options = {
+      hostname: url.hostname,
+      port: url.port || 443,
+      path: url.pathname,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": Buffer.byteLength(encoded),
+      },
+    };
+    const req = https.request(options, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        try {
+          resolve({ status: res.statusCode, body: JSON.parse(Buffer.concat(chunks).toString("utf8")) });
+        } catch (e) {
+          reject(new Error(`Failed to parse response: ${e.message}`));
+        }
+      });
+    });
+    req.on("error", (e) => reject(e));
+    req.write(encoded);
+    req.end();
+  });
+}
+
+// ── Device-code flow ────────────────────────────────────────────────────────
+// Initiates the OAuth 2.0 device code flow against Entra ID and polls for
+// the user to complete authentication. Returns the refresh token.
+
+async function deviceCodeFlow(tenantId, clientId) {
+  const deviceCodeUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/devicecode`;
+  const tokenUrl      = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const scope         = "https://api.businesscentral.dynamics.com/.default offline_access";
+
+  // Step 1: Request a device code
+  const dc = await httpsPost(deviceCodeUrl, { client_id: clientId, scope });
+  if (!dc.body.device_code) {
+    throw new Error(`Device code request failed: ${dc.body.error_description || JSON.stringify(dc.body)}`);
+  }
+
+  process.stderr.write(`\n[create-connection-string] ── Device Code Authentication ──\n`);
+  process.stderr.write(`[create-connection-string] ${dc.body.message}\n\n`);
+
+  // Try to open the verification URL in the default browser
+  try {
+    const opener = process.platform === "win32" ? "start"
+      : process.platform === "darwin" ? "open" : "xdg-open";
+    spawnSync(opener, [dc.body.verification_uri], { shell: true });
+  } catch { /* non-fatal */ }
+
+  // Step 2: Poll for token
+  let interval = Math.max(dc.body.interval || 5, 5) * 1000;
+  const deadline = Date.now() + dc.body.expires_in * 1000;
+
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, interval));
+
+    const tok = await httpsPost(tokenUrl, {
+      client_id: clientId,
+      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      device_code: dc.body.device_code,
+    });
+
+    if (tok.body.refresh_token) {
+      process.stderr.write("[create-connection-string] Authentication successful.\n");
+      return tok.body.refresh_token;
+    }
+
+    if (tok.body.error === "authorization_pending") continue;
+    if (tok.body.error === "slow_down") { interval += 5000; continue; }
+
+    throw new Error(`Device code flow failed: ${tok.body.error_description || tok.body.error}`);
+  }
+
+  throw new Error("Device code flow timed out. Please try again.");
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 (async function main() {
   const opts = parseArgs(process.argv);
 
-  let secret;
-  try {
-    secret = await promptSecret("BC client secret (input hidden)");
-  } catch (e) {
-    process.stderr.write(`[create-connection-string] ${e.message}\n`);
-    process.exit(1);
-  }
+  let payload;
 
-  const payload = JSON.stringify({
-    tenantId:     opts.tenant,
-    clientId:     opts.client,
-    clientSecret: secret,
-    environment:  opts.environment,
-  });
-  secret = null;
+  if (opts.deviceCode) {
+    // Device code flow — interactive browser auth, stores refresh token
+    let refreshToken;
+    try {
+      refreshToken = await deviceCodeFlow(opts.tenant, opts.client);
+    } catch (e) {
+      process.stderr.write(`[create-connection-string] ${e.message}\n`);
+      process.exit(1);
+    }
+    payload = JSON.stringify({
+      tenantId:     opts.tenant,
+      clientId:     opts.client,
+      refreshToken: refreshToken,
+      environment:  opts.environment,
+    });
+    refreshToken = null;
+  } else {
+    // Client secret flow — hidden prompt
+    let secret;
+    try {
+      secret = await promptSecret("BC client secret (input hidden)");
+    } catch (e) {
+      process.stderr.write(`[create-connection-string] ${e.message}\n`);
+      process.exit(1);
+    }
+    payload = JSON.stringify({
+      tenantId:     opts.tenant,
+      clientId:     opts.client,
+      clientSecret: secret,
+      environment:  opts.environment,
+    });
+    secret = null;
+  }
 
   // Call the server to encrypt the credentials with AES-256-GCM
   process.stderr.write(`[create-connection-string] Calling encrypt_data at ${opts.mcpUrl} ...\n`);

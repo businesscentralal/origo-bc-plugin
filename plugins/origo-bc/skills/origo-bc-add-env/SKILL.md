@@ -9,7 +9,7 @@ description: >
   under `%USERPROFILE%\OrigoBC\` and only appends a new entry to the Cowork
   MCP config.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   author: "Origo hf."
 ---
 
@@ -65,7 +65,7 @@ chosen nickname collides, ask again.
 
 Same as `/origo-bc-setup`:
 
-- Never prompt for the client secret in chat.
+- Never prompt for the client secret or refresh token in chat.
 - Never attempt to decrypt or inspect the AES blob.
 - Atomic write of the config (temp file + rename).
 
@@ -89,10 +89,15 @@ pick a non-colliding nickname.
 
 ### Step 3 — Collect coordinates
 
-Use `AskUserQuestion` for: nickname, tenant, client, environment,
-optional default company GUID.
+Use `AskUserQuestion` for: nickname, tenant, client, **authentication
+method** (Client secret or Device code), environment, optional default
+company GUID.
+
+See `/origo-bc-setup` Step 3 for the explanation of each auth method.
 
 ### Step 4 — Generate the blob
+
+**If the user chose Client secret:**
 
 Windows PowerShell:
 
@@ -116,6 +121,33 @@ node create-connection-string.js \
 
 Tell the user the helper will prompt for the client secret with hidden
 input and copy the final AES-encrypted blob to the clipboard.
+
+**If the user chose Device code:**
+
+Windows PowerShell:
+
+```powershell
+cd $env:USERPROFILE\OrigoBC
+.\Create-ConnectionString.ps1 `
+  -TenantId    '<tenant>' `
+  -ClientId    '<client>' `
+  -DeviceCode `
+  -Environment '<env>'
+```
+
+macOS / Linux:
+
+```bash
+cd ~/OrigoBC
+node create-connection-string.js \
+  --tenant      '<tenant>' \
+  --client      '<client>' \
+  --device-code \
+  --environment '<env>'
+```
+
+Tell the user the helper will open their browser for sign-in and then
+copy the final AES-encrypted blob to the clipboard. No secret is needed.
 
 ### Step 5 — Receive the blob
 

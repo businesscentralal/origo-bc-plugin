@@ -9,7 +9,7 @@ description: >
   identifying the affected entry, optionally updating the local scripts,
   running the connection helper, and replacing the blob in the config.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   author: "Origo hf."
 ---
 
@@ -21,9 +21,13 @@ entry in the Cowork MCP config. Common triggers:
 - **v0.3 migration**: user sees the error _"plain: connection strings are
   no longer supported"_ after the server-side update.
 - **Credential rotation**: client secret was renewed in Azure AD.
+- **Refresh token expired**: device-code connection needs re-authentication.
 - **Environment change**: same tenant/client but different BC environment.
+- **Auth method switch**: migrating from client secret to device code or
+  vice versa.
 
-The client secret **never** passes through Claude chat.
+Credentials (client secret or refresh token) **never** pass through
+Claude chat.
 
 ## Preconditions
 
@@ -51,7 +55,7 @@ The client secret **never** passes through Claude chat.
 
 ## Guardrails
 
-- Never prompt for the client secret in chat.
+- Never prompt for the client secret or refresh token in chat.
 - Never attempt to decrypt or inspect the old or new blob.
 - When replacing the blob, use atomic write (temp file + rename).
 - If the user has multiple `bc-*` entries, only modify the one they
@@ -101,11 +105,18 @@ Step 2).
 
 ### Step 5 — Collect coordinates
 
-Use `AskUserQuestion` for tenant ID, client ID, and environment. Pre-fill
-defaults from any known context (e.g., if the entry name hints at the
-environment). Ask the user to confirm or correct each value.
+Use `AskUserQuestion` for tenant ID, client ID, **authentication method**
+(Client secret or Device code), and environment. Pre-fill defaults from
+any known context (e.g., if the entry name hints at the environment).
+Ask the user to confirm or correct each value.
+
+See `/origo-bc-setup` Step 3 for the explanation of each auth method.
+If the user originally used one method and wants to switch, that's fine
+— the new blob simply replaces the old one regardless of auth type.
 
 ### Step 6 — Generate the new blob
+
+**If the user chose Client secret:**
 
 Windows PowerShell:
 
@@ -129,6 +140,33 @@ node create-connection-string.js \
 
 Tell the user the helper will prompt for the client secret with hidden
 input and copy the new AES-encrypted blob to the clipboard.
+
+**If the user chose Device code:**
+
+Windows PowerShell:
+
+```powershell
+cd $env:USERPROFILE\OrigoBC
+.\Create-ConnectionString.ps1 `
+  -TenantId    '<tenant>' `
+  -ClientId    '<client>' `
+  -DeviceCode `
+  -Environment '<env>'
+```
+
+macOS / Linux:
+
+```bash
+cd ~/OrigoBC
+node create-connection-string.js \
+  --tenant      '<tenant>' \
+  --client      '<client>' \
+  --device-code \
+  --environment '<env>'
+```
+
+Tell the user the helper will open their browser for sign-in and then
+copy the new AES-encrypted blob to the clipboard. No secret is needed.
 
 ### Step 7 — Receive the new blob
 

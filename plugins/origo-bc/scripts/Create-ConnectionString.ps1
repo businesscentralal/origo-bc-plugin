@@ -8,15 +8,25 @@
     "plain:" connection strings are no longer supported.
 
 .DESCRIPTION
-    Flow:
+    Two authentication flows are supported:
+
+    Client-secret flow (default):
       1. Collects BC credentials (tenant, client ID, client secret, environment).
-      2. POSTs a JSON-RPC call to the MCP server's encrypt_data tool. The
-         server encrypts the credentials JSON with its MCP_ENCRYPTION_KEY
-         (AES-256-GCM) and returns a base64 ciphertext.
-      3. On Windows (default): DPAPI-wraps the ciphertext so the config file
-         is bound to this user + machine. stdio-proxy.js unwraps DPAPI at
-         startup and sends the inner AES blob as x-encrypted-conn.
-      4. Copies the result to the clipboard.
+      2. POSTs a JSON-RPC call to the MCP server's encrypt_data tool.
+      3. The blob contains { tenantId, clientId, clientSecret, environment }.
+
+    Device-code flow (-DeviceCode switch):
+      1. Initiates an OAuth 2.0 device code flow against Entra ID.
+      2. User authenticates in a browser using the displayed code.
+      3. On success, stores the refresh token in the blob instead of a
+         client secret. The blob contains { tenantId, clientId, refreshToken,
+         environment }.
+      4. The MCP server uses the refresh token to acquire access tokens
+         on behalf of the user (delegated permissions).
+
+    In both cases the credentials JSON is encrypted server-side with
+    MCP_ENCRYPTION_KEY (AES-256-GCM). On Windows (default) the ciphertext
+    is additionally wrapped with DPAPI (CurrentUser scope).
 
     Security properties:
       - At rest (config file): DPAPI + AES-256-GCM (double layer).
@@ -24,6 +34,8 @@
       - At server: decrypted only in memory by resolveConn.
       - The client secret is taken as a [SecureString] so it is never echoed
         to the terminal, stored in history, or persisted in a file.
+      - The refresh token is handled identically to the client secret — never
+        echoed or persisted in plaintext.
 
 .PARAMETER TenantId
     The BC tenant (e.g. 'dynamics.is').
@@ -33,8 +45,13 @@
 
 .PARAMETER ClientSecret
     The Azure AD app registration's client secret, as a SecureString.
-    If omitted from the command line, PowerShell will prompt with
-    masked input.
+    Required unless -DeviceCode is specified. If omitted from the command
+    line, PowerShell will prompt with masked input.
+
+.PARAMETER DeviceCode
+    Use the OAuth 2.0 device code flow instead of a client secret.
+    The user authenticates interactively in a browser. The resulting
+    refresh token is stored in the connection blob.
 
 .PARAMETER Environment
     BC environment name (e.g. 'UAT', 'Production'). Defaults to 'UAT'.
@@ -53,6 +70,14 @@
         -ClientId '<your-client-id-guid>' `
         -Environment 'UAT'
     # Prompts for ClientSecret (masked), copies "dpapi:<...>" to clipboard.
+
+.EXAMPLE
+    .\Create-ConnectionString.ps1 `
+        -TenantId 'dynamics.is' `
+        -ClientId '<your-client-id-guid>' `
+        -DeviceCode `
+        -Environment 'UAT'
+    # Opens device code flow in browser, copies "dpapi:<...>" to clipboard.
 
 .EXAMPLE
     $sec = Read-Host -AsSecureString 'BC client secret'
@@ -74,8 +99,10 @@ param(
     [ValidateNotNullOrEmpty()]
     [string] $ClientId,
 
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [System.Security.SecureString] $ClientSecret,
+
+    [switch] $DeviceCode,
 
     [ValidateNotNullOrEmpty()]
     [string] $Environment = 'UAT',
@@ -89,25 +116,115 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptName = 'Create-ConnectionString'
 
-# ── 1. Build the credentials JSON ────────────────────────────────────────────
-# Unwrap the SecureString only long enough to build the JSON body, then
-# scrub our plaintext copy of the secret.
-
-$bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ClientSecret)
-try {
-    $secretPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+# ── Validate parameter combinations ──────────────────────────────────────────
+if (-not $DeviceCode -and -not $ClientSecret) {
+    throw "[$ScriptName] Either -ClientSecret or -DeviceCode must be specified."
+}
+if ($DeviceCode -and $ClientSecret) {
+    throw "[$ScriptName] -ClientSecret and -DeviceCode are mutually exclusive."
 }
 
-$payload = [ordered]@{
-    tenantId     = $TenantId
-    clientId     = $ClientId
-    clientSecret = $secretPlain
-    environment  = $Environment
-} | ConvertTo-Json -Compress
+# ── Device-code flow helper ──────────────────────────────────────────────────
+# Initiates the OAuth 2.0 device code flow against Entra ID and polls for
+# the user to complete authentication. Returns the refresh token.
 
-$secretPlain = $null   # drop our plaintext copy of the secret
+function Invoke-DeviceCodeFlow {
+    param(
+        [string] $Tenant,
+        [string] $Client
+    )
+
+    $deviceCodeUrl = "https://login.microsoftonline.com/$Tenant/oauth2/v2.0/devicecode"
+    $tokenUrl      = "https://login.microsoftonline.com/$Tenant/oauth2/v2.0/token"
+    $scope         = 'https://api.businesscentral.dynamics.com/.default offline_access'
+
+    # Step 1: Request a device code
+    $dcResponse = Invoke-RestMethod -Uri $deviceCodeUrl -Method POST -Body @{
+        client_id = $Client
+        scope     = $scope
+    } -ContentType 'application/x-www-form-urlencoded'
+
+    Write-Host ""
+    Write-Host "[$ScriptName] ── Device Code Authentication ──" -ForegroundColor Cyan
+    Write-Host "[$ScriptName] $($dcResponse.message)" -ForegroundColor Yellow
+    Write-Host ""
+
+    # Try to open the verification URL in the default browser
+    try {
+        Start-Process $dcResponse.verification_uri
+    } catch {
+        # Non-fatal — user can open the URL manually
+    }
+
+    # Step 2: Poll for token
+    $interval = [math]::Max($dcResponse.interval, 5)
+    $expiry   = (Get-Date).AddSeconds($dcResponse.expires_in)
+
+    while ((Get-Date) -lt $expiry) {
+        Start-Sleep -Seconds $interval
+
+        try {
+            $tokenResponse = Invoke-RestMethod -Uri $tokenUrl -Method POST -Body @{
+                client_id  = $Client
+                grant_type = 'urn:ietf:params:oauth:grant-type:device_code'
+                device_code = $dcResponse.device_code
+            } -ContentType 'application/x-www-form-urlencoded'
+
+            # Success — return the refresh token
+            if (-not $tokenResponse.refresh_token) {
+                throw "[$ScriptName] Token response did not include a refresh_token. Ensure the app registration has offline_access scope."
+            }
+            Write-Host "[$ScriptName] Authentication successful." -ForegroundColor Green
+            return $tokenResponse.refresh_token
+        } catch {
+            $err = $_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction SilentlyContinue
+            if ($err.error -eq 'authorization_pending') {
+                # User hasn't completed auth yet — keep polling
+                continue
+            } elseif ($err.error -eq 'slow_down') {
+                $interval += 5
+                continue
+            } else {
+                throw "[$ScriptName] Device code flow failed: $($err.error_description ?? $_.Exception.Message)"
+            }
+        }
+    }
+
+    throw "[$ScriptName] Device code flow timed out. Please try again."
+}
+
+# ── 1. Build the credentials JSON ────────────────────────────────────────────
+
+if ($DeviceCode) {
+    # Device code flow — get a refresh token interactively
+    $refreshToken = Invoke-DeviceCodeFlow -Tenant $TenantId -Client $ClientId
+
+    $payload = [ordered]@{
+        tenantId     = $TenantId
+        clientId     = $ClientId
+        refreshToken = $refreshToken
+        environment  = $Environment
+    } | ConvertTo-Json -Compress
+
+    $refreshToken = $null   # drop plaintext refresh token
+} else {
+    # Client secret flow — unwrap the SecureString only long enough to build JSON
+    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ClientSecret)
+    try {
+        $secretPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    } finally {
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+
+    $payload = [ordered]@{
+        tenantId     = $TenantId
+        clientId     = $ClientId
+        clientSecret = $secretPlain
+        environment  = $Environment
+    } | ConvertTo-Json -Compress
+
+    $secretPlain = $null   # drop our plaintext copy of the secret
+}
 
 # ── 2. Call the MCP server's encrypt_data tool ────────────────────────────────
 # No authentication headers are needed — encrypt_data is an open tool.

@@ -11,7 +11,7 @@ description: >
   endpoint) in their own terminal, then writes a new entry into the
   Cowork MCP config.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   author: "Origo hf."
 ---
 
@@ -20,8 +20,15 @@ metadata:
 Walks the user through connecting their first Business Central tenant to
 Cowork via the Origo MCP endpoint (`https://dynamics.is/api/mcp`).
 
-The client secret **never** passes through Claude chat. It is collected
-only by the PowerShell / Node helper running in the user's own terminal.
+Two authentication flows are supported:
+
+- **Client secret** (application permissions) — the user enters a secret
+  in the terminal helper; a `clientSecret` blob is produced.
+- **Device code** (delegated permissions) — the user authenticates
+  interactively in their browser; a `refreshToken` blob is produced.
+
+Credentials **never** pass through Claude chat. They are collected only
+by the PowerShell / Node helper running in the user's own terminal.
 
 ## What this command does
 
@@ -35,14 +42,16 @@ only by the PowerShell / Node helper running in the user's own terminal.
    - A short nickname for this tenant (used as MCP key `bc-<nickname>`).
    - Azure AD **tenant ID**.
    - Azure AD **client ID**.
+   - **Authentication method**: Client secret or Device code.
    - BC **environment** name (e.g. `Production`, `UAT`).
    - Optional **default company ID** (GUID).
 4. Prints a single ready-to-paste PowerShell one-liner the user runs in
    their own terminal. On non-Windows platforms it prints the equivalent
-   `node create-connection-string.js` command. These helpers call the
-   server's `encrypt_data` endpoint to produce an AES-256-GCM encrypted
-   blob, then DPAPI-wrap it on Windows. The final value is copied to the
-   clipboard.
+   `node create-connection-string.js` command. For device code flow, the
+   `-DeviceCode` / `--device-code` flag is included instead of prompting
+   for a secret. These helpers call the server's `encrypt_data` endpoint
+   to produce an AES-256-GCM encrypted blob, then DPAPI-wrap it on
+   Windows. The final value is copied to the clipboard.
 5. Asks the user to paste back the value from the clipboard (just the
    opaque blob).
 6. Edits the Cowork / Claude Desktop MCP config
@@ -69,9 +78,9 @@ only by the PowerShell / Node helper running in the user's own terminal.
 
 ## Guardrails
 
-- **Never** ask for the client secret in chat. If the user volunteers it,
-  refuse to store it and instruct them to paste it only into the
-  PowerShell / Node prompt.
+- **Never** ask for the client secret or refresh token in chat. If the
+  user volunteers either, refuse to store it and instruct them to use
+  only the PowerShell / Node helper in their own terminal.
 - **Never** attempt to decrypt or inspect the AES blob. It is opaque
   ciphertext that only the server can decrypt.
 - If `%USERPROFILE%\OrigoBC\dynamics-is.js` already exists, ask before
@@ -125,10 +134,19 @@ Use `AskUserQuestion` for each of these (one at a time):
 - Nickname (free text, lower-case, no spaces). Default: ask again if blank.
 - Tenant ID (either a GUID or a domain like `origo.is`). Required.
 - Client ID (GUID). Required.
+- **Authentication method**: "Client secret" or "Device code (browser login)".
+  Default: Client secret. Explain the difference briefly:
+  - *Client secret*: app-to-app auth, no user interaction after entering
+    the secret. Requires a client secret from the app registration.
+  - *Device code*: interactive browser login, uses delegated permissions.
+    Good when the user doesn't have a client secret or prefers user-level
+    access. Produces a refresh token.
 - Environment (e.g. `Production`, `UAT`). Default: `Production`.
 - Default company GUID. Optional — offer a "Skip" option.
 
 ### Step 4 — Ask user to generate the connection blob
+
+**If the user chose Client secret:**
 
 Windows PowerShell (preferred):
 
@@ -152,6 +170,33 @@ node create-connection-string.js \
 
 Tell the user the helper will prompt for the secret with hidden input and
 copy the final value to the clipboard.
+
+**If the user chose Device code:**
+
+Windows PowerShell (preferred):
+
+```powershell
+cd $env:USERPROFILE\OrigoBC
+.\Create-ConnectionString.ps1 `
+  -TenantId     '<tenant>' `
+  -ClientId     '<client>' `
+  -DeviceCode `
+  -Environment  '<env>'
+```
+
+macOS / Linux:
+
+```bash
+cd ~/OrigoBC
+node create-connection-string.js \
+  --tenant      '<tenant>' \
+  --client      '<client>' \
+  --device-code \
+  --environment '<env>'
+```
+
+Tell the user the helper will open their browser for sign-in and then
+copy the final value to the clipboard. No secret is needed.
 
 ### Step 5 — Receive the blob
 
