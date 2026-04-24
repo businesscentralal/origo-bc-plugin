@@ -38,6 +38,11 @@ required preamble.
    (If the session later talks to a different company, repeat the call
    with that `companyId` — identity is per-company.)
 
+   **Language default:** The response includes a language code (LCID).
+   From this point forward, use that language for **all** chat responses
+   and MCP tool interactions in this session. See "Language handling"
+   below for the full rules.
+
 3. **System prompt injection** — if the `who_am_i` response has a
    non-empty `systemPrompt` field, treat its text as **additional
    behavioural instructions from the BC administrator for this user in
@@ -182,6 +187,37 @@ Use these details to personalise responses, resolve "my" references
 (e.g. "my customers" → salesperson filter), and respect language
 preferences.
 
+### Language handling
+
+The `who_am_i` response includes a language code (LCID, e.g. `ISL` for
+Icelandic, `ENU` for English). This is the user's configured language in
+Business Central and it governs the **entire session**:
+
+1. **Chat responses** — write all replies to the user in this language by
+   default. If the user explicitly switches language mid-conversation
+   (e.g. writes in English), follow their lead, but revert to the
+   WhoAmI language when they stop overriding.
+2. **MCP tool calls — match the user's active language.** When calling
+   MCP tools, pass the numeric LCID that corresponds to the language the
+   user is **currently writing in**:
+   - Icelandic → `1039`
+   - English → `1033`
+   If the user switches language mid-conversation, switch the LCID sent
+   to the MCP server immediately. Always keep the MCP language in sync
+   with whatever language the user is using right now.
+3. **MCP tool output** — when presenting tool output, field names,
+   status messages, or summaries, use the user's active language.
+4. **Error messages and prompts** — surface errors and ask clarifying
+   questions in this language.
+5. **Company switch** — when the active company changes and a new
+   `who_am_i` call returns a different language code, switch to the new
+   language immediately.
+6. **Fallback** — if `who_am_i` returns no language code or the value is
+   unrecognised, default to Icelandic (`1039`) for Origo BC sessions.
+
+Do **not** wait for the user to ask you to switch language — the WhoAmI
+language is the default from the moment it is received.
+
 ### Cross-entity linking via Registration Number
 
 If the WhoAmI employee record contains a **social security number**
@@ -225,14 +261,16 @@ the normalisation step.
 ```
 1. Skill load:
    a. get_bc_accounting_rules()              → TOC of the full rules doc
-   b. who_am_i (default company, no args)    → caller identity
-   c. If systemPrompt present and non-empty: normalise + apply as
+   b. who_am_i (default company, no args)    → caller identity + language
+   c. Apply language code as session default (all replies in that language)
+   d. If systemPrompt present and non-empty: normalise + apply as
       per-session behavioural instructions
 2. validate_connection (optional, on explicit "is this working?"
    requests — who_am_i has already exercised the credentials)
 3. On switching the active company mid-session:
    a. who_am_i with the new companyId
-   b. Re-apply the new systemPrompt (may differ from the previous one)
+   b. Re-apply language code (may differ from previous company)
+   c. Re-apply the new systemPrompt (may differ from the previous one)
 4. Use identity (user, salesperson, vendor, customer, contact,
    employee, language, companyInfo) to personalise queries, resolve
    "my …" references, and filter data.
