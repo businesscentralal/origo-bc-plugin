@@ -296,6 +296,46 @@ steps:
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
   # ---------------------------------------------------------------------
+  # Upload install guide images (docs/images/) to the same blob path.
+  # Served at https://origopublic.blob.core.windows.net/resources/mcp/images/
+  # Referenced by install.html via relative paths.
+  # ---------------------------------------------------------------------
+  - bash: |
+      set -euo pipefail
+
+      IMG_DIR="docs/images"
+      if [[ ! -d "$IMG_DIR" ]]; then
+        echo "No docs/images/ directory — skipping."
+        exit 0
+      fi
+
+      BASE="${STORAGE_BASE_URL%/}"
+      CONTAINER="$(BLOB_CONTAINER)"
+      PREFIX="$(BLOB_PREFIX)"
+      ACCOUNT=$(echo "$BASE" | sed -E 's#https?://([^.]+)\..*#\1#')
+
+      echo "Uploading install guide images..."
+      echo "  -> $BASE/$CONTAINER/$PREFIX/images/"
+
+      az storage blob upload-batch \
+        --account-name "$ACCOUNT" \
+        --destination "$CONTAINER" \
+        --destination-path "$PREFIX/images" \
+        --source "$IMG_DIR" \
+        --sas-token "$STORAGE_SAS_TOKEN" \
+        --overwrite \
+        --content-cache-control "public, max-age=86400" \
+        --only-show-errors
+
+      echo ""
+      echo "Done. Images uploaded to $BASE/$CONTAINER/$PREFIX/images/"
+    env:
+      STORAGE_BASE_URL: $(StorageBaseURL)
+      STORAGE_SAS_TOKEN: $(StorageSasToken)
+    displayName: Upload install guide images to public blob
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+  # ---------------------------------------------------------------------
   # Mirror main to public GitHub repo
   #
   # Pushes the current state of main to
