@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Origo BC — Cowork plugin uppsetning / installation</title>
-  <meta name="description" content="Leiðbeiningar um uppsetningu á origo-bc Cowork plugin-inu — tengir Claude við Business Central hjá Origo. Installation guide for the origo-bc Cowork plugin.">
+  <title>Origo BC — Plugin uppsetning / Installation</title>
+  <meta name="description" content="Leiðbeiningar um uppsetningu á origo-bc plugin-inu — tengir Claude við Business Central hjá Origo. Installation guide for the origo-bc plugin.">
   <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%231a365d'/><text x='32' y='42' font-family='system-ui' font-size='28' font-weight='700' fill='white' text-anchor='middle'>o</text></svg>">
   <style>
     :root {
@@ -196,16 +196,16 @@
     }
     .url-row a { color: #9ac1f5; text-decoration: none; }
     .url-row a:hover { text-decoration: underline; }
-    .modes {
+    .methods {
       display: grid;
       grid-template-columns: 1fr;
       gap: 14px;
       margin: 16px 0 8px;
     }
     @media (min-width: 640px) {
-      .modes { grid-template-columns: repeat(3, 1fr); }
+      .methods { grid-template-columns: repeat(2, 1fr); }
     }
-    .mode {
+    .method {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -213,14 +213,14 @@
       display: flex;
       flex-direction: column;
     }
-    .mode h3 {
+    .method h3 {
       margin: 0 0 4px;
       font-size: 15px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .mode .badge {
+    .method .badge {
       display: inline-block;
       font-size: 10px;
       text-transform: uppercase;
@@ -231,25 +231,22 @@
       border-radius: 3px;
       font-weight: 500;
     }
-    .mode .badge.ok { background: #dcfce7; color: #166534; }
-    .mode .badge.no { background: #fee2e2; color: #991b1b; }
+    .method .badge.ok { background: #dcfce7; color: #166534; }
     @media (prefers-color-scheme: dark) {
-      .mode .badge.ok { background: #14311d; color: #86efac; }
-      .mode .badge.no { background: #2a1414; color: #fca5a5; }
+      .method .badge.ok { background: #14311d; color: #86efac; }
     }
-    .mode p { font-size: 13px; color: var(--muted); margin: 4px 0 10px; }
-    .mode a.jump {
+    .method p { font-size: 13px; color: var(--muted); margin: 4px 0 10px; }
+    .method a.jump {
       margin-top: auto;
       font-size: 13px;
       font-weight: 600;
       text-decoration: none;
       color: var(--accent);
     }
-    .mode a.jump:hover { text-decoration: underline; }
+    .method a.jump:hover { text-decoration: underline; }
     [data-lang] { display: none; }
     html[lang="is"] [data-lang="is"],
     html[lang="en"] [data-lang="en"] { display: block; }
-    /* Inline lang spans used inside other blocks */
     span[data-lang] { display: none; }
     html[lang="is"] span[data-lang="is"],
     html[lang="en"] span[data-lang="en"] { display: inline; }
@@ -262,24 +259,21 @@
         <a href="#" data-set-lang="is">Íslenska</a>
         <a href="#en" data-set-lang="en">English</a>
       </nav>
-      <span class="tag">origo-bc &middot; Cowork plugin</span>
+      <span class="tag">origo-bc &middot; plugin</span>
 
       <div data-lang="is">
         <h1>Tengdu Claude við Business Central</h1>
         <p class="lede">
           <code>origo-bc</code> tengir Claude Desktop við Origo
-          Business Central MCP-þjón. Byrjaðu alltaf í
-          <strong>Claude Desktop</strong> — en uppsetningin fer eftir því
-          í hvaða ham þú ert.
+          Business Central MCP-þjón. Eitt plugin sem virkar
+          í bæði <strong>Cowork</strong> og <strong>Code</strong>.
         </p>
         <p style="margin:0; font-size:14px; color:var(--muted);">
-          <a href="#which-mode">Hvaða hamur? &rarr;</a>
-          &nbsp;&middot;&nbsp;
-          <a href="#cowork">Cowork</a>
-          &nbsp;&middot;&nbsp;
-          <a href="#code">Code</a>
+          <a href="#install">Uppsetning</a>
           &nbsp;&middot;&nbsp;
           <a href="#entra">Entra skráning</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#first-connection">Fyrsta tenging</a>
           &nbsp;&middot;&nbsp;
           <a href="#versions">Útgáfur</a>
         </p>
@@ -289,18 +283,15 @@
         <h1>Connect Claude to Business Central</h1>
         <p class="lede">
           <code>origo-bc</code> wires Claude Desktop up to the Origo
-          Business Central MCP server. You always start from
-          <strong>Claude Desktop</strong> — what you do next depends on
-          which mode you're in.
+          Business Central MCP server. One plugin that works
+          in both <strong>Cowork</strong> and <strong>Code</strong>.
         </p>
         <p style="margin:0; font-size:14px; color:var(--muted);">
-          <a href="#which-mode">Which mode? &rarr;</a>
-          &nbsp;&middot;&nbsp;
-          <a href="#cowork">Cowork</a>
-          &nbsp;&middot;&nbsp;
-          <a href="#code">Code</a>
+          <a href="#install">Installation</a>
           &nbsp;&middot;&nbsp;
           <a href="#entra">Entra app</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#first-connection">First connection</a>
           &nbsp;&middot;&nbsp;
           <a href="#versions">Versions</a>
         </p>
@@ -312,527 +303,388 @@
     <!-- ============================================================= -->
     <div data-lang="is">
 
-      <h2 id="which-mode">Hvaða hamur í Claude Desktop?</h2>
-      <p>
-        Claude Desktop (frá
-        <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>)
-        býður upp á þrjár leiðir — og <strong>origo-bc er ekki sett upp
-        á sama hátt í þeim öllum</strong>. Finndu þann sem þú ert í:
-      </p>
-
-      <div class="modes">
-        <div class="mode">
-          <h3>Chat <span class="badge no">Ekki stutt</span></h3>
-          <p>
-            Venjulegt Claude Desktop spjall. Engin plugin-stuðning — origo-bc
-            virkar ekki hér. Skiptu yfir í Cowork eða Code.
-          </p>
-        </div>
-        <div class="mode">
-          <h3>Cowork <span class="badge ok">Mælt með</span></h3>
-          <p>
-            Skrifstofuverkefni — tala við Claude, leita í BC,
-            undirbúa PEPPOL UBL XML, birtingarhæf svör. Dragðu
-            <code>.plugin</code>-skrá í spjall.
-          </p>
-          <a class="jump" href="#cowork">Uppsetning fyrir Cowork &rarr;</a>
-        </div>
-        <div class="mode">
-          <h3>Code <span class="badge">Þróun</span></h3>
-          <p>
-            Að skrifa kóða — AL, C#, Python, TypeScript, PowerShell eða
-            annað — t.d. integrationir við Cloud Events eða önnur
-            BC-verkefni úr skipanaglugga. Uppsetning með
-            <code>claude plugin marketplace add</code>.
-          </p>
-          <a class="jump" href="#code">Uppsetning fyrir Code &rarr;</a>
-        </div>
-      </div>
-
-      <h2>Hvað þú færð</h2>
+      <h2>Hvað færðu</h2>
       <ul>
-        <li>Sjálfvirk regla (<code>origo-bc-accounting</code>) sem kennir Claude vinnuflæðið hjá Origo — nafnrými, tengiforrit, uppfærslureglur.</li>
-        <li>Þróunarregla (<code>origo-bc-cloud-events</code>) sem hleður Cloud Events API-skilgreiningum, skilaboðagerðum og dæmum gegnum MCP-þjóninn.</li>
-        <li><code>/origo-bc-setup</code> — fyrsti tengingaraðstoðarmaður.</li>
-        <li><code>/origo-bc-add-env</code> — bætir við fleiri BC-umhverfum.</li>
-        <li><code>/origo-bc-list-environments</code> — birtir öll tengd umhverfi.</li>
-        <li><code>/origo-bc-switch-company</code> — skipta um sjálfgefið fyrirtæki.</li>
+        <li>Regla (<code>origo-bc-accounting</code>) sem kennir Claude Origo BC verkflæðið — nafnrými, tengisnið, uppfærslureglur.</li>
+        <li>Þróunarregla (<code>origo-bc-cloud-events</code>) sem hleður Cloud Events API skilgreiningum, skilaboðategundum og dæmum í gegnum MCP-þjóninn.</li>
+        <li><code>/origo-bc-setup</code> — tengihjálp við fyrstu uppsetningu.</li>
+        <li><code>/origo-bc-add-env</code> — bæta við BC-umhverfi.</li>
+        <li><code>/origo-bc-list-environments</code> — sýna öll tengd umhverfi.</li>
+        <li><code>/origo-bc-switch-company</code> — breyta sjálfgefnu fyrirtæki.</li>
       </ul>
 
       <h2>Áður en þú byrjar</h2>
       <div class="card">
-        <h3>Node.js 18 eða nýrri</h3>
+        <h3>Node.js 18 eða nýrra</h3>
         <p>
-          Bæði Cowork- og Code-leiðin keyra tengingu í gegnum lítið
-          Node-ferli. Staðfestu að Node sé uppsett:
+          Bæði Cowork og Code nota lítið Node-ferli til að tengjast.
+          Athugaðu hvort Node sé uppsett:
         </p>
         <pre><code>node --version</code></pre>
         <p>
-          Ef skipunin finnst ekki — sæktu LTS-útgáfuna frá
+          Ef skipunin finnst ekki, sæktu LTS-útgáfu frá
           <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
-          og endurræstu Claude Desktop eftir uppsetningu.
+          og endurræstu Claude Desktop á eftir.
         </p>
       </div>
 
-      <!-- ============================ COWORK ============================ -->
-      <h2 id="cowork">Ef þú ert í Cowork</h2>
+      <!-- ============================ INSTALL ============================ -->
+      <h2 id="install">Uppsetning</h2>
       <p>
-        Einfaldasta leiðin er að sækja tilbúna <code>.plugin</code>-skrá
-        og draga hana inn í spjallið.
+        Tvær leiðir til að setja upp — <strong>GitHub Marketplace</strong>
+        er ráðlögð og virkar í bæði Cowork og Code.
       </p>
 
-      <h3>1. Sækja skrána</h3>
-      <p>
-        Smelltu á hnappinn hér að neðan <strong>í vafra</strong>
-        (Edge, Chrome, Firefox — ekki inni í Cowork). Vafrinn vistar
-        <code>origo-bc-cowork.plugin</code> í <code>Downloads</code>-möppuna.
-        Skráin er 10–20 KB.
-      </p>
-      <p>
-        <a class="cta" href="origo-bc-cowork.plugin" download>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Sækja origo-bc-cowork.plugin
-        </a>
-        <a class="subcta" href="#versions">Eða veldu fasta útgáfu &rarr;</a>
-      </p>
-
-      <div class="callout">
-        <strong>Ekki líma slóðina inn í Cowork sem skilaboð</strong>
-        URL-ið er aðeins niðurhalsslóð. Cowork getur ekki sett upp
-        plugin af URL-i — þú þarft að hafa <em>skrána sjálfa</em> á
-        tölvunni þinni áður en þú heldur áfram.
+      <div class="methods">
+        <div class="method">
+          <h3>GitHub Marketplace <span class="badge ok">Ráðlögð</span></h3>
+          <p>
+            Sett upp í gegnum <code>claude</code> CLI. Virkar í
+            bæði Cowork og Code og uppfærist auðveldlega.
+          </p>
+          <a class="jump" href="#marketplace">Marketplace uppsetning &rarr;</a>
+        </div>
+        <div class="method">
+          <h3>Sækja .plugin skrá</h3>
+          <p>
+            Handvirk niðurhal á <code>.plugin</code>-skrá. Nytsamlegt
+            ef þú vilt ekki nota CLI eða ert í Cowork.
+          </p>
+          <a class="jump" href="#download">Sækja skrá &rarr;</a>
+        </div>
       </div>
 
-      <h3>2. Setja upp í Cowork</h3>
-      <p>Tvær leiðir — báðar virka, veldu þá sem hentar:</p>
-
-      <h3>Leið A — draga skrána í spjall</h3>
-      <ol>
-        <li>Opnaðu File Explorer og farðu í <code>Downloads</code>.</li>
-        <li>Opnaðu nýtt spjall í Cowork við hliðina á.</li>
-        <li>Dragðu skrána <code>origo-bc-cowork.plugin</code> beint úr File
-          Explorer og slepptu henni í <em>innsláttarreitinn</em>
-          (þar sem þú skrifar skilaboð).</li>
-        <li><strong>Ýttu á Send.</strong> Ekki hætta við — þú þarft að
-          senda skilaboðin.</li>
-        <li>Claude svarar með uppsetningarkorti — smelltu á
-          <em>Install</em>.</li>
-      </ol>
-
-      <h3>Leið B — gegnum stillingar</h3>
-      <ol>
-        <li>Í Cowork: <em>Settings &rarr; Plugins</em>.</li>
-        <li>Smelltu á <em>Install from file</em>.</li>
-        <li>Flettu í <code>Downloads</code> og veldu
-          <code>origo-bc-cowork.plugin</code>.</li>
-        <li>Staðfestu uppsetninguna.</li>
-      </ol>
-
-      <div class="callout">
-        <strong>Ef uppsetningarkortið birtist ekki</strong>
-        Athugaðu þrennt: (1) að þú sért í <em>Cowork-ham</em>, ekki
-        venjulegu Claude Desktop spjalli — titillinn á glugganum ætti að
-        segja „Cowork"; (2) að þú hafir dregið inn <em>skrána</em>, ekki
-        URL-ið; (3) að þú hafir ýtt á <em>Send</em>, ekki bara hætt við.
-      </div>
-
-      <!-- ============================ CODE ============================ -->
-      <h2 id="code">Ef þú ert í Code</h2>
+      <!-- ---- Marketplace ---- -->
+      <h3 id="marketplace">Leið A — GitHub Marketplace (ráðlögð)</h3>
       <p>
-        Claude Code (CLI-hamurinn) notar ekki
-        <code>.plugin</code>-skrá. Fyrst þarftu að setja upp
-        <code>claude</code> CLI-tólið sjálft, og keyra síðan tvær
-        skipanir til að bæta við origo-bc.
+        Þú þarft <code>claude</code> CLI á PATH. Ef þú ert
+        ekki með það, settu það upp fyrst:
       </p>
-
-      <h3>1. Setja upp Claude Code CLI</h3>
-      <p>
-        Ef þú ert ekki með <code>claude</code> skipunina á PATH,
-        settu hana upp fyrst:
-      </p>
-
       <p><strong>macOS</strong></p>
-      <pre><code># Leið A — Homebrew (mælt með)
+      <pre><code># Homebrew (ráðlagt)
 brew install claude
 
-# Leið B — npm
+# eða npm
 npm install -g @anthropic-ai/claude-code</code></pre>
-
       <p><strong>Windows</strong></p>
-      <pre><code># npm (krefst Node.js 18+)
-npm install -g @anthropic-ai/claude-code</code></pre>
-
-      <p>
-        Staðfestu uppsetningu:
-      </p>
+      <pre><code>npm install -g @anthropic-ai/claude-code</code></pre>
+      <p>Athugaðu uppsetningu:</p>
       <pre><code>claude --version</code></pre>
-      <p class="small">
-        Ef skipunin finnst ekki, lokaðu og opnaðu skipanagluggann
-        aftur (eða endurræstu VS Code) svo PATH-breytan uppfærist.
-      </p>
 
-      <h3>2. Bæta við origo-bc plugin</h3>
-      <p>
-        Keyrðu tvær skipanir — Code hleður
-        <em>origo</em>-markaðstorginu beint af opinberu
-        GitHub-repo-inu okkar:
-      </p>
+      <p>Keyrðu svo tvær skipanir:</p>
       <pre><code>claude plugin marketplace add businesscentralal/origo-bc-plugin
 claude plugin install origo-bc@origo</code></pre>
       <p>
-        Fyrri skipunin skráir <em>origo</em>-markaðstorgið. Seinni
-        skipunin sækir nýjustu útgáfu af <code>origo-bc</code> og setur
-        hana upp í <code>~/.claude/plugins/</code>. Endurræstu Claude Code
-        (eða opnaðu nýja sessjón) til að skilgreiningin hlaðist.
+        Fyrri skipunin skráir <em>origo</em> marketplace-ið.
+        Seinni sækir nýjustu <code>origo-bc</code> útgáfuna og setur
+        hana upp í <code>~/.claude/plugins/</code>. Endurræstu
+        Claude Desktop eða opnaðu nýtt spjall svo skilgreiningarnar
+        hleðst inn.
       </p>
 
       <div class="callout">
-        <strong>Virkar líka í Cowork</strong>
-        Ef þú setur upp plugin-ið í Claude Code verður það einnig virkt
-        í Claude Cowork — þú þarft ekki að setja það upp sérstaklega
-        í báðum hömum.
+        <strong>Virkar í báðum hamum</strong>
+        Plugin sem er sett upp í gegnum CLI er virkt í bæði
+        Cowork og Code — ekki þarf sérstaka uppsetningu í hvorum ham.
       </div>
 
-      <h3>3. Uppfæra plugin</h3>
-      <p>
-        Þegar ný útgáfa kemur út, keyrðu:
-      </p>
+      <p><strong>Uppfærsla:</strong></p>
       <pre><code>claude plugin update origo-bc@origo</code></pre>
-      <p>
-        Endurræstu Claude Code (eða opnaðu nýja sessjón) eftir
-        uppfærslu.
-      </p>
       <p class="small">
         Til að fjarlægja: <code>claude plugin uninstall origo-bc</code>
       </p>
 
-
-      <!-- ============================ SAMEIGINLEGT ============================ -->
-      <h2 id="entra">Forkrafa — Entra App Registration</h2>
+      <!-- ---- Download ---- -->
+      <h3 id="download">Leið B — Sækja .plugin skrá</h3>
       <p>
-        MCP-þjónninn á <code>dynamics.is/api/mcp</code> auðkennir sig
-        með <strong>Microsoft Entra-skráningu</strong> (áður Azure AD).
-        Þú þarft þrjú gildi áður en þú keyrir
-        <code>/origo-bc-setup</code>: <em>Tenant ID</em>, <em>Client ID</em>
-        og <em>Client Secret</em>. Skráninguna þarf líka að tengja inn í
-        BC sem <em>Microsoft Entra Application</em> með réttum
-        heimildarsamstæðum.
+        Sæktu skrána í vafra (Edge, Chrome, Firefox — ekki inni í Claude)
+        og dragðu hana í Cowork spjall.
+      </p>
+      <p>
+        <a class="cta" href="origo-bc.plugin" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Sækja origo-bc.plugin
+        </a>
+        <a class="subcta" href="#versions">Eða velja útgáfu &rarr;</a>
       </p>
 
-      <div class="card" style="margin-bottom:24px;">
-        <p style="margin:0 0 10px;"><strong>Lágmarksstilling eftir auðkenningarham</strong></p>
-        <table style="width:100%; font-size:13px; border-collapse:collapse;">
-          <thead>
-            <tr style="text-align:left; border-bottom:2px solid var(--line);">
-              <th style="padding:6px 8px;">Stilling</th>
-              <th style="padding:6px 8px;">MCP-þjónn<br><span style="font-weight:400;color:var(--muted);">(client credentials)</span></th>
-              <th style="padding:6px 8px;">Notandaaðgangur<br><span style="font-weight:400;color:var(--muted);">(device code)</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;">Allow public client flows</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;"><strong>Já</strong></td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;">Client secret</td>
-              <td style="padding:6px 8px;"><strong>Já</strong></td>
-              <td style="padding:6px 8px;">—</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;">Redirect URI</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;">—</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;"><code>app_access</code> (Application)</td>
-              <td style="padding:6px 8px;"><strong>Skylda</strong></td>
-              <td style="padding:6px 8px;">—</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;"><code>Financials.ReadWrite.All</code> (Delegated)</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;"><strong>Skylda</strong></td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;"><code>user_impersonation</code> (Delegated)</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;"><strong>Skylda</strong></td>
-            </tr>
-            <tr>
-              <td style="padding:6px 8px;"><code>User.Read</code> (Graph, Delegated)</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;">Valfrjálst</td>
-            </tr>
-          </tbody>
-        </table>
-        <p style="margin:10px 0 0; font-size:13px; color:var(--muted);">
-          Ef þú vilt styðja <em>bæði</em> hami á sömu skráningu (mælt
-          með) — bættu öllu við. Uppsetningin hér að neðan gerir einmitt
-          það. <code>offline_access</code> scope-ið (nauðsynlegt fyrir
-          device code refresh token) er óskað á <em>token-tíma</em>, ekki
-          í skráningunni sjálfri.
-        </p>
+      <p><strong>Uppsetning í Cowork:</strong></p>
+      <ol>
+        <li>Opnaðu File Explorer og farðu í <code>Downloads</code>.</li>
+        <li>Opnaðu nýtt Cowork spjall.</li>
+        <li>Dragðu <code>origo-bc.plugin</code> beint í innsláttarreitinn.</li>
+        <li><strong>Smelltu á Send.</strong> Ekki hætta við.</li>
+        <li>Claude svarar með uppsetningakorti — smelltu á <em>Install</em>.</li>
+      </ol>
+      <p><strong>Eða í gegnum stillingar:</strong>
+        <em>Settings &rarr; Plugins &rarr; Install from file</em>
+        og veldu skrána.</p>
+
+      <div class="callout">
+        <strong>Ef uppsetningarkort birtist ekki</strong>
+        Athugaðu: (1) þú ert í <em>Cowork</em>, ekki venjulegu spjalli;
+        (2) þú drógst <em>skrána</em>, ekki URL; (3) þú smelltir á <em>Send</em>.
       </div>
 
-      <h3>1. Azure-hliðin — búa til app-skráningu</h3>
+
+      <!-- ============================ ENTRA ============================ -->
+      <h2 id="entra">Entra App Registration</h2>
       <p>
-        Við fylgjum staðalmynstri Microsoft fyrir
-        „Business Central Web Service Client" — sami grunnur og
-        Microsoft notar í eigin dæmum. Uppsetningin styður bæði
-        <em>innskráningarflæði</em> (delegated, fyrir notanda við
-        lyklaborðið) og <em>ósjálfvirkt flæði</em> (app-only /
-        client-credentials, fyrir MCP-þjóninn).
+        MCP-þjónninn á <code>dynamics.is/api/mcp</code> auðkennir gegn
+        <strong>Microsoft Entra</strong> (áður Azure AD). Tvær
+        auðkenningarleiðir eru studdar — veldu þá sem hentar:
       </p>
 
-      <p><strong>1a. Nýskrá app</strong></p>
+      <div class="methods">
+        <div class="method">
+          <h3>Client Secret</h3>
+          <p>
+            Forritið keyrir sjálfstætt (unattended). MCP-þjónninn
+            notar <code>app_access</code> réttindi. Hentar fyrir
+            sjálfvirkan aðgang.
+          </p>
+          <a class="jump" href="#auth-secret">Client Secret leiðbeiningar &rarr;</a>
+        </div>
+        <div class="method">
+          <h3>Device Code</h3>
+          <p>
+            Notandinn skráir sig inn með eigin aðgangi. Hentar
+            þegar notandi vill tengjast í gegnum sinn BC-aðgang.
+          </p>
+          <a class="jump" href="#auth-device">Device Code leiðbeiningar &rarr;</a>
+        </div>
+      </div>
+
+      <!-- ---- Client Secret ---- -->
+      <h3 id="auth-secret">Client Secret uppsetning</h3>
+      <p>
+        Þetta er bestu leiðin þegar MCP-þjónninn á að keyra sjálfstætt
+        (client credentials) án innskráningar notanda.
+      </p>
+
+      <p><strong>1. Skráðu nýtt app í Azure</strong></p>
       <ol>
-        <li>Farðu inn í
+        <li>Opnaðu
           <a href="https://portal.azure.com/" target="_blank" rel="noopener">portal.azure.com</a>
-          → <em>Microsoft Entra ID</em> → <em>App registrations</em> →
+          &rarr; <em>Microsoft Entra ID</em> &rarr; <em>App registrations</em> &rarr;
           <em>New registration</em>.</li>
         <li><strong>Name</strong>:
-          <code>Business Central Web Service Client</code>
-          — eða <code>&lt;fyrirtæki&gt; BC — Claude</code> ef þú vilt
-          merkja við sérstakt umhverfi.</li>
-        <li><strong>Supported account types</strong>: bæði virka —
-          <em>Accounts in this organizational directory only (Single
-          tenant)</em> er einfaldast og duglegt þegar appið þjónar
-          aðeins eigið fyrirtæki. <em>Accounts in any organizational
-          directory (Multitenant)</em> er gagnlegt ef sama skráning á
-          að gilda yfir mörg umhverfi eða hjá þjónustuaðila. Dæmið sem
-          við vísum í notar <code>AzureADMultipleOrgs</code>, en
-          <em>single-tenant</em> virkar alveg eins fyrir flesta.</li>
+          <code>BC Web Service Client</code> eða sambærilegt.</li>
+        <li><strong>Supported account types</strong>:
+          <em>Accounts in this organizational directory only (Single tenant)</em>
+          dugar í flestum tilvikum.</li>
+        <li><strong>Redirect URI</strong>: skildu eftir autt.</li>
+        <li>Smelltu á <em>Register</em>.</li>
+      </ol>
+
+      <p><strong>2. API permissions</strong></p>
+      <ol>
+        <li>Farðu í <em>API permissions</em> &rarr; <em>Add a permission</em>.</li>
+        <li>Veldu <strong>Dynamics 365 Business Central</strong>.</li>
+        <li>Veldu <strong>Application permissions</strong> &rarr; <code>app_access</code>.</li>
+        <li>Smelltu á <em>Add permissions</em>.</li>
+        <li>Smelltu á <em>Grant admin consent for &lt;tenant&gt;</em>
+          og staðfestu.</li>
+      </ol>
+
+      <p><strong>3. Client secret</strong></p>
+      <ol>
+        <li><em>Certificates &amp; secrets</em> &rarr;
+          <em>Client secrets</em> &rarr; <em>New client secret</em>.</li>
+        <li>Lýsing: t.d. <code>Claude MCP</code>. Gildir: 12–24 mánuðir.</li>
+        <li>Smelltu á <em>Add</em>. <strong>Afritaðu gildið strax</strong>
+          — það birtist aldrei aftur.</li>
+      </ol>
+
+      <p><strong>4. Afritaðu þessi gildi</strong></p>
+      <ul>
+        <li><strong>Tenant ID</strong> — <em>Overview</em> &rarr;
+          <em>Directory (tenant) ID</em>.</li>
+        <li><strong>Client ID</strong> — <em>Overview</em> &rarr;
+          <em>Application (client) ID</em>.</li>
+        <li><strong>Client Secret</strong> — gildið frá skrefi 3.</li>
+      </ul>
+
+      <p>
+        Farðu svo í <a href="#bc-side">BC-skráning</a> hér að neðan.
+      </p>
+
+      <!-- ---- Device Code ---- -->
+      <h3 id="auth-device">Device Code uppsetning</h3>
+      <p>
+        Þetta hentar þegar notandi vill tengjast í gegnum sinn
+        eigin BC-aðgang (delegated access). Ekkert client secret þarf.
+      </p>
+
+      <p><strong>1. Skráðu nýtt app í Azure</strong></p>
+      <ol>
+        <li>Opnaðu
+          <a href="https://portal.azure.com/" target="_blank" rel="noopener">portal.azure.com</a>
+          &rarr; <em>Microsoft Entra ID</em> &rarr; <em>App registrations</em> &rarr;
+          <em>New registration</em>.</li>
+        <li><strong>Name</strong>:
+          <code>BC Claude - Device Code</code> eða sambærilegt.</li>
+        <li><strong>Supported account types</strong>:
+          <em>Accounts in this organizational directory only (Single tenant)</em>.</li>
         <li><strong>Redirect URI</strong>: veldu
-          <em>Public client/native (mobile &amp; desktop)</em> og sláðu
-          inn:
+          <em>Public client/native (mobile &amp; desktop)</em> og sláðu inn:
           <pre><code>https://businesscentral.dynamics.com/OAuthLanding.htm</code></pre>
         </li>
         <li>Smelltu á <em>Register</em>.</li>
       </ol>
 
-      <p><strong>1b. Authentication — leyfa public client flows</strong></p>
+      <p><strong>2. Leyfa public client flows</strong></p>
       <ol>
-        <li>Opnaðu <em>Authentication</em>-flipann á nýja app-inu.</li>
+        <li>Farðu í <em>Authentication</em> flipann.</li>
         <li>Neðst, undir <em>Advanced settings</em>:
-          <strong>Allow public client flows</strong> → <em>Yes</em>.</li>
+          <strong>Allow public client flows</strong> &rarr; <em>Yes</em>.</li>
         <li>Smelltu á <em>Save</em>.</li>
       </ol>
 
-      <p><strong>1c. API permissions — fjórar heimildir</strong></p>
-      <p>
-        Í <em>API permissions</em>-flipanum smellirðu á
-        <em>Add a permission</em> og bætir við öllum fjórum hér að
-        neðan. Þrjár eru <em>Delegated</em> (í nafni notanda), ein er
-        <em>Application</em> (app-only — <strong>skilyrði fyrir
-        MCP-þjóninn</strong>).
-      </p>
-
+      <p><strong>3. API permissions</strong></p>
+      <ol>
+        <li>Farðu í <em>API permissions</em> &rarr; <em>Add a permission</em>.</li>
+        <li>Bættu við eftirfarandi <strong>Delegated</strong> réttindum:</li>
+      </ol>
       <div class="card">
-        <p style="margin:0 0 8px;"><strong>Microsoft Graph</strong></p>
+        <p style="margin:0 0 8px;"><strong>Dynamics 365 Business Central</strong></p>
         <ul style="margin-top:0;">
-          <li><code>User.Read</code> — Delegated.</li>
+          <li><code>Financials.ReadWrite.All</code> — Delegated (les/skrifa BC gögn).</li>
+          <li><code>user_impersonation</code> — Delegated (aðgangur sem notandi).</li>
         </ul>
-        <p style="margin:12px 0 8px;"><strong>Dynamics 365 Business Central</strong></p>
+        <p style="margin:12px 0 8px;"><strong>Microsoft Graph</strong> (valkvætt)</p>
         <ul style="margin-top:0;">
-          <li><code>Financials.ReadWrite.All</code> — Delegated (les/skrifa BC-gögn í nafni notanda).</li>
-          <li><code>user_impersonation</code> — Delegated (stöðluð BC-beinisaðganga).</li>
-          <li><code>app_access</code> — <strong>Application</strong> (ósjálfvirkur aðgangur, MCP-þjónninn).</li>
+          <li><code>User.Read</code> — Delegated (lesa notandaupplýsingar).</li>
         </ul>
       </div>
-
-      <ol>
-        <li>Þegar allar fjórar eru komnar í listann, smelltu á
-          <em>Grant admin consent for &lt;leigjandi&gt;</em> og
-          staðfestu. <em>Status</em>-dálkurinn á að sýna græna
-          gátmerkingu fyrir allar heimildirnar.</li>
+      <ol start="3">
+        <li>Smelltu á <em>Grant admin consent for &lt;tenant&gt;</em>
+          og staðfestu.</li>
       </ol>
 
-      <p><strong>1d. Certificates &amp; secrets — nýtt client secret</strong></p>
-      <ol>
-        <li><em>Certificates &amp; secrets</em> →
-          <em>Client secrets</em> → <em>New client secret</em>.</li>
-        <li><strong>Description</strong>: notaðu nafnavenju sem segir
-          hver bjó lykilinn til og á hvaða tíma (t.d.
-          <code>ORI1058</code> fylgir Origo-innri mynstri). Hjálpar
-          þegar þarf að skipta út lykli seinna.</li>
-        <li><strong>Expires</strong>: mælt með 12–24 mánuðum (Azure
-          leyfir ekki meira en 24).</li>
-        <li>Smelltu á <em>Add</em>. <strong>Afritaðu gildið strax</strong>
-          — það birtist ekki aftur, aðeins <em>hint</em> (t.d.
-          <code>Z26…</code>) og <em>Secret ID</em>.</li>
-      </ol>
-
-      <p><strong>1e. Afrita það sem þú þarft</strong></p>
-      <p>
-        Fyrir <code>/origo-bc-setup</code> þarftu þrjú gildi — afritaðu
-        þau úr Azure:
-      </p>
+      <p><strong>4. Afritaðu þessi gildi</strong></p>
       <ul>
-        <li><strong>Tenant ID</strong> — <em>Overview</em> →
+        <li><strong>Tenant ID</strong> — <em>Overview</em> &rarr;
           <em>Directory (tenant) ID</em>.</li>
-        <li><strong>Client ID</strong> — <em>Overview</em> →
+        <li><strong>Client ID</strong> — <em>Overview</em> &rarr;
           <em>Application (client) ID</em>.</li>
-        <li><strong>Client Secret</strong> — gildið úr skrefi 1d
-          (<em>ekki</em> <em>Secret ID</em>).</li>
       </ul>
+      <p class="small">
+        Ekkert client secret þarf — device code flæðið notar
+        <code>offline_access</code> scope við token-beiðni.
+      </p>
 
-      <div class="callout">
-        <strong>Ekki deila client-secret-inu</strong>
-        Geymdu gildið á öruggum stað (password manager). Ef það týnist
-        skaltu búa til nýtt — það er ekki hægt að birta gamalt aftur.
-      </div>
+      <p>
+        Farðu svo í <a href="#bc-side">BC-skráning</a> hér að neðan.
+      </p>
 
-      <div class="callout">
-        <strong>Lágmarksútgáfan (aðeins MCP)</strong>
-        Ef þú notar appið einungis fyrir Claude MCP-tengingu (aldrei
-        fyrir innskráðan notanda), dugar einn permission:
-        <code>app_access</code> (Application). Redirect URI og
-        <em>Allow public client flows</em> eru þá heldur ekki
-        nauðsynleg — en það er samt þægilegt að hafa þau með strax svo
-        sama skráning virki líka fyrir interactive tól (t.d. BC-appið
-        sjálft) síðar.
-      </div>
-
-      <h3>2. BC-hliðin — skrá appið og gefa heimildir</h3>
+      <!-- ---- BC side (shared) ---- -->
+      <h3 id="bc-side">BC-hlið — skráðu forritið og veittu réttindi</h3>
+      <p>
+        Þetta skref er eins fyrir bæði Client Secret og Device Code.
+      </p>
       <ol>
-        <li>Opnaðu Business Central sem kennitölunotandi með
-          kerfisstjóraheimildir.</li>
-        <li>Leitaðu (Alt+Q) að <em>Microsoft Entra Applications</em> og
-          opnaðu síðuna.</li>
-        <li><em>New</em> → nýtt spjaldið lítur út eins og skjámyndin hér
-          að neðan:</li>
+        <li>Opnaðu Business Central sem admin-notandi.</li>
+        <li>Leitaðu (Alt+Q) að <em>Microsoft Entra Applications</em>
+          og opnaðu síðuna.</li>
+        <li><em>New</em> &rarr; fylltu út:</li>
       </ol>
       <div class="card">
-        <p style="margin:0;"><strong>General</strong></p>
-        <ul style="margin-top:6px;">
-          <li><strong>Client ID</strong>: líma <em>Application (client) ID</em> úr Azure.</li>
-          <li><strong>Description</strong>: stutt heiti (t.d. <code>Cloud Events Tests</code>).</li>
+        <ul style="margin:0;">
+          <li><strong>Client ID</strong>: Application (client) ID frá Azure.</li>
+          <li><strong>Description</strong>: stutt lýsing.</li>
           <li><strong>State</strong>: <em>Enabled</em>.</li>
         </ul>
       </div>
       <ol start="4">
-        <li>Í flipanum <em>User Permission Sets</em> bætir þú við
-          <strong>a.m.k.</strong> eftirfarandi samstæðum:</li>
+        <li>Í <em>User Permission Sets</em> flipanum, bættu við:</li>
       </ol>
       <div class="card">
-        <p style="margin:0 0 6px;"><strong>Lágmarksheimildir</strong></p>
+        <p style="margin:0 0 6px;"><strong>Lágmarks réttindi</strong></p>
         <ul style="margin-top:0;">
-          <li><code>CLOUD EVENTS API</code> — <em>Cloud Events Base</em> /
-            <em>System</em>. <strong>Skylda.</strong> Þetta er samstæðan
-            sem gefur Claude aðgang að Cloud Events endapunktunum og
-            MCP-tólinu sjálfu.</li>
-          <li><code>D365 BASIC</code> — <em>Base Application</em> /
-            <em>System</em>. Grunnaðgangur að BC (lestur á yfirlitum,
-            tenglum, númeraröðum).</li>
+          <li><code>CLOUD EVENTS API</code> — <em>Cloud Events Base / System</em>. <strong>Nauðsynlegt.</strong></li>
+          <li><code>D365 BASIC</code> — <em>Base Application / System</em>. Grunnréttindi.</li>
         </ul>
-        <p style="margin:12px 0 6px;"><strong>Gagnaheimildir</strong> (veldu eftir notkun)</p>
+        <p style="margin:12px 0 6px;"><strong>Gagnareglur</strong> (eftir notkun)</p>
         <ul style="margin-top:0;">
-          <li><code>SUPER (DATA)</code> — <em>System Application</em> /
-            <em>System</em>. Fullur aðgangur að BC-gögnum.
-            <em>Einfaldast að setja upp, en mjög gjafmilt — ekki nota
-            fyrir utanaðkomandi aðila.</em></li>
-          <li>Eða sérsniðnar samstæður: t.d. <code>D365 READ</code>
-            + <code>D365 SALES</code> ef Claude á bara að lesa og
-            skoða sölur; <code>D365 FIN</code> fyrir fjármálavinnslur;
-            o.s.frv.</li>
+          <li><code>SUPER (DATA)</code> — fullur aðgangur. <em>Ekki nota fyrir þriðja aðila.</em></li>
+          <li>Eða afmarkaðar reglur: <code>D365 READ</code> + <code>D365 SALES</code> o.s.frv.</li>
         </ul>
-        <p style="margin-bottom:0; font-size:13px; color:var(--muted);">
-          Heimildirnar sem þú bætir við hér stjórna hvaða gögnum Claude
-          getur séð og breytt í <em>þessu tiltekna fyrirtæki</em>. Að
-          breyta þeim seinna krefst þess að <em>State</em> sé sett á
-          <em>Disabled</em> fyrst.
-        </p>
       </div>
-
-      <h3>3. Veita samþykki (Grant Consent)</h3>
-      <ol>
-        <li>Á Entra Application-spjaldinu smellirðu á
-          <em>Grant Consent</em> (efst).</li>
-        <li>BC beinir þér yfir á Microsoft-innskráningu — skráðu þig
-          inn sem kerfisstjóri leigjandans (tenant admin) og samþykktu.</li>
-        <li>Ef samþykki tekst snýrðu aftur í BC með
-          „Consent granted"-skilaboðum. Appið er núna tilbúið.</li>
+      <ol start="5">
+        <li>Smelltu á <em>Grant Consent</em> (efst á síðunni).</li>
+        <li>BC vísar þér á Microsoft — skráðu þig inn sem admin og samþykktu.</li>
       </ol>
 
       <div class="callout">
-        <strong>Prófunar- vs. framleiðsluumhverfi</strong>
-        Búðu til aðskilda Entra-skráningu fyrir hvert umhverfi (t.d.
-        <em>cronus</em>, <em>prod</em>) og aðskildar
-        <em>Entra Application</em>-færslur í BC. Þú getur síðan tengt
-        þau í Claude í gegnum <code>/origo-bc-add-env</code> og skipt á
-        milli án þess að blanda saman leyfum.
+        <strong>Aðskildar skráningar eftir umhverfi</strong>
+        Búðu til sérstakt Entra app (og BC <em>Entra Application</em>
+        færslu) fyrir hvert umhverfi — t.d. <em>cronus</em>,
+        <em>prod</em>. Skráðu hvert í Claude með
+        <code>/origo-bc-add-env</code>.
       </div>
 
-      <h2>Fyrsta tenging (bæði Cowork og Code)</h2>
-      <p>Byrjaðu nýtt spjall / sessjón og skrifaðu:</p>
-      <pre><code>/origo-bc-setup</code></pre>
-      <p>Aðstoðarmaðurinn spyr þig um:</p>
-      <ol>
-        <li><strong>MCP-slóð</strong> — <code>https://dynamics.is/api/mcp</code> er sjálfgefið.</li>
-        <li><strong>Tenant ID</strong> — <em>Directory (tenant) ID</em> úr Azure.</li>
-        <li><strong>Client ID</strong> — <em>Application (client) ID</em> úr Azure.</li>
-        <li><strong>Client Secret</strong> — gildið sem þú afritaðir í skrefi 1.</li>
-        <li><strong>Environment</strong> — <em>Production</em>, <em>Sandbox</em>, eða nafn á sérsandkassa (t.d. <em>cronus</em>).</li>
-        <li><strong>Fyrirtækisnafn</strong> — eins og það birtist í BC.</li>
-      </ol>
-      <p>Claude byggir síðan rétt auðkenningarsnið (<code>plain:&lt;base64&gt;</code> á flestum kerfum, DPAPI-vafið á Windows) og keyrir <code>setup_origo_bc_environment</code>. MCP-þjónninn birtist í tólalista Claude.</p>
 
-      <h2>Bæta við fleiri umhverfum</h2>
-      <p>Ef þú vinnur með fleira en eitt BC-fyrirtæki:</p>
+      <!-- ============================ FIRST CONNECTION ============================ -->
+      <h2 id="first-connection">Fyrsta tenging</h2>
+      <p>Opnaðu nýtt spjall og sláðu inn:</p>
+      <pre><code>/origo-bc-setup</code></pre>
+      <p>Hjálpin biður um:</p>
+      <ol>
+        <li><strong>MCP URL</strong> — <code>https://dynamics.is/api/mcp</code> sjálfgefið.</li>
+        <li><strong>Tenant ID</strong> — <em>Directory (tenant) ID</em> frá Azure.</li>
+        <li><strong>Client ID</strong> — <em>Application (client) ID</em> frá Azure.</li>
+        <li><strong>Client Secret</strong> — gildið sem þú afritaðir (aðeins Client Secret leið).</li>
+        <li><strong>Environment</strong> — <em>Production</em>, <em>Sandbox</em> eða nafn (t.d. <em>cronus</em>).</li>
+        <li><strong>Company name</strong> — eins og það birtist í BC.</li>
+      </ol>
+
+      <h3>Bæta við fleiri umhverfum</h3>
       <pre><code>/origo-bc-add-env</code></pre>
-      <p>Hver tenging fær sitt nafn (t.d. <em>prod</em>, <em>test</em>, <em>cronus</em>) og þú getur skipt á milli þeirra án þess að endurstilla.</p>
 
       <h3>Skipta um sjálfgefið fyrirtæki</h3>
       <pre><code>/origo-bc-switch-company</code></pre>
 
-      <h3>Sjá öll tengd umhverfi</h3>
+      <h3>Sýna allt tengt</h3>
       <pre><code>/origo-bc-list-environments</code></pre>
 
-      <h2>Bilanagreining</h2>
+
+      <!-- ============================ TROUBLESHOOTING ============================ -->
+      <h2>Úrræðaleit</h2>
       <div class="card">
         <h3><code>node: command not found</code></h3>
         <p>Node.js er ekki á PATH. Settu upp LTS frá
           <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
-          og endurræstu Cowork.</p>
+          og endurræstu Claude Desktop.</p>
 
         <h3>MCP-tólin birtast ekki</h3>
-        <p>Lokaðu Cowork alveg (táknið í kerfisbakka &rarr; <em>Quit</em>)
+        <p>Lokaðu Claude Desktop alveg (táknið í kerfisbakka &rarr; <em>Quit</em>)
           og opnaðu aftur. MCP-þjónar sækjast aðeins við ræsingu.</p>
 
         <h3>Rangt fyrirtæki í svörum</h3>
         <p>Keyrðu <code>/origo-bc-switch-company</code> og veldu rétt
-          fyrirtæki. Þetta hefur aðeins áhrif á virka spjallið ef þú
-          sendir kommandoið þar — til að gera breytinguna varanlega, sjá
-          <code>/origo-bc-setup</code>.</p>
+          fyrirtæki.</p>
 
-        <h3>„Unauthorized" frá MCP-þjóninum</h3>
+        <h3>&bdquo;Unauthorized&ldquo; frá MCP-þjóninum</h3>
         <p>Auðkenning er útrunnin eða röng. Keyrðu
           <code>/origo-bc-setup</code> aftur og sláðu inn nýja auðkenningu.</p>
       </div>
 
+      <!-- ============================ VERSIONS ============================ -->
       <h2 id="versions">Útgáfur</h2>
       <p>
-        Nýjasta slóðin hér að ofan er alltaf endurskrifuð við hverja
-        útgáfu. Ef þú vilt festa þig við tiltekna útgáfu (t.d. fyrir
-        rekjanleika), notaðu slóð á borð við:
+        Nýjasta slóðin er alltaf endurskrifuð við hverja útgáfu.
+        Ef þú vilt festa þig við tiltekna útgáfu, notaðu slóð á borð við:
       </p>
-      <h4>Cowork (létt útgáfa)</h4>
       <div class="url-row">
-        <a href="origo-bc-cowork-0.2.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-cowork-0.2.0.plugin</a>
-      </div>
-      <h4>Code (full útgáfa)</h4>
-      <div class="url-row">
-        <a href="origo-bc-0.2.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.2.0.plugin</a>
+        <a href="origo-bc-0.3.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.3.0.plugin</a>
       </div>
       <div class="url-row" style="margin-top:6px;">
-        <a href="origo-bc-0.1.1.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin</a>
+        <a href="origo-bc-0.2.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.2.0.plugin</a>
       </div>
       <p style="margin-top:10px;">
         Útgáfunúmerið má finna í <code>plugin.json</code> innan
-        <code>.plugin</code>-skrárinnar, og nýjasta útgáfan er
-        alltaf sú sem er hlaðin upp á slóðina efst á síðunni.
+        <code>.plugin</code>-skrárinnar.
       </p>
 
       <h2>Aðstoð</h2>
@@ -849,43 +701,6 @@ claude plugin install origo-bc@origo</code></pre>
     <!--                        ENGLISH                                 -->
     <!-- ============================================================= -->
     <div data-lang="en">
-
-      <h2 id="which-mode">Which Claude Desktop mode?</h2>
-      <p>
-        Claude Desktop (from
-        <a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>)
-        ships three modes — and <strong>origo-bc is installed
-        differently in each one</strong>. Find the one you're in:
-      </p>
-
-      <div class="modes">
-        <div class="mode">
-          <h3>Chat <span class="badge no">Not supported</span></h3>
-          <p>
-            The regular Claude Desktop chat. No plugin support — origo-bc
-            won't run here. Switch to Cowork or Code.
-          </p>
-        </div>
-        <div class="mode">
-          <h3>Cowork <span class="badge ok">Recommended</span></h3>
-          <p>
-            Office work — talking to Claude, searching BC, preparing
-            PEPPOL UBL XML, presentable replies. Install by dropping a
-            <code>.plugin</code> file into chat.
-          </p>
-          <a class="jump" href="#cowork">Install for Cowork &rarr;</a>
-        </div>
-        <div class="mode">
-          <h3>Code <span class="badge">Development</span></h3>
-          <p>
-            Writing code — AL, C#, Python, TypeScript, PowerShell, or
-            anything else — for Cloud Events integrations or other
-            BC-related work from the terminal. Install with
-            <code>claude plugin marketplace add</code>.
-          </p>
-          <a class="jump" href="#code">Install for Code &rarr;</a>
-        </div>
-      </div>
 
       <h2>What you get</h2>
       <ul>
@@ -912,396 +727,309 @@ claude plugin install origo-bc@origo</code></pre>
         </p>
       </div>
 
-      <!-- ============================ COWORK ============================ -->
-      <h2 id="cowork">If you're in Cowork</h2>
+      <!-- ============================ INSTALL ============================ -->
+      <h2 id="install">Installation</h2>
       <p>
-        The simplest path is to download the prebuilt
-        <code>.plugin</code> file and drop it into chat.
+        Two ways to install — <strong>GitHub Marketplace</strong> is
+        recommended and works in both Cowork and Code.
       </p>
 
-      <h3>1. Download the file</h3>
-      <p>
-        Click the button below <strong>in a web browser</strong>
-        (Edge, Chrome, Firefox — not inside Cowork). The browser saves
-        <code>origo-bc-cowork.plugin</code> into your <code>Downloads</code>
-        folder. The file is 10–20 KB.
-      </p>
-      <p>
-        <a class="cta" href="origo-bc-cowork.plugin" download>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download origo-bc-cowork.plugin
-        </a>
-        <a class="subcta" href="#versions">Or pick a pinned version &rarr;</a>
-      </p>
-
-      <div class="callout">
-        <strong>Don't paste the URL into Cowork as a message</strong>
-        The URL is just a download link. Cowork can't install plugins
-        from URLs — you need the <em>file itself</em> on your machine
-        before continuing.
+      <div class="methods">
+        <div class="method">
+          <h3>GitHub Marketplace <span class="badge ok">Recommended</span></h3>
+          <p>
+            Installed via the <code>claude</code> CLI. Works in
+            both Cowork and Code with easy updates.
+          </p>
+          <a class="jump" href="#marketplace">Marketplace install &rarr;</a>
+        </div>
+        <div class="method">
+          <h3>Download .plugin file</h3>
+          <p>
+            Manual download of the <code>.plugin</code> file. Useful
+            if you prefer not to use the CLI or are in Cowork.
+          </p>
+          <a class="jump" href="#download">Download file &rarr;</a>
+        </div>
       </div>
 
-      <h3>2. Install in Cowork</h3>
-      <p>Two ways — either works, pick whichever is handier:</p>
-
-      <h3>Option A — drop the file into chat</h3>
-      <ol>
-        <li>Open File Explorer / Finder and go to <code>Downloads</code>.</li>
-        <li>Open a new Cowork chat alongside it.</li>
-        <li>Drag the <code>origo-bc-cowork.plugin</code> file directly from
-          File Explorer into the chat <em>message input</em> (where you
-          type).</li>
-        <li><strong>Hit Send.</strong> Don't cancel — you need to
-          actually send the message.</li>
-        <li>Claude replies with an install card — click <em>Install</em>.</li>
-      </ol>
-
-      <h3>Option B — via Settings</h3>
-      <ol>
-        <li>In Cowork: <em>Settings &rarr; Plugins</em>.</li>
-        <li>Click <em>Install from file</em>.</li>
-        <li>Browse to <code>Downloads</code> and pick
-          <code>origo-bc-cowork.plugin</code>.</li>
-        <li>Confirm the install.</li>
-      </ol>
-
-      <div class="callout">
-        <strong>If no install card appears</strong>
-        Check three things: (1) you're in <em>Cowork mode</em>, not the
-        regular Claude Desktop chat — the window title should say
-        "Cowork"; (2) you dropped the <em>file</em>, not the URL;
-        (3) you hit <em>Send</em> instead of cancelling.
-      </div>
-
-      <!-- ============================ CODE ============================ -->
-      <h2 id="code">If you're in Code</h2>
+      <!-- ---- Marketplace ---- -->
+      <h3 id="marketplace">Option A — GitHub Marketplace (recommended)</h3>
       <p>
-        Claude Code (the CLI mode) doesn't use the
-        <code>.plugin</code> file. First install the
-        <code>claude</code> CLI itself, then run two commands to add
-        origo-bc.
+        You need the <code>claude</code> CLI on your PATH. If you
+        don't have it, install it first:
       </p>
-
-      <h3>1. Install the Claude Code CLI</h3>
-      <p>
-        If you don't have the <code>claude</code> command on your
-        PATH yet, install it first:
-      </p>
-
       <p><strong>macOS</strong></p>
       <pre><code># Option A — Homebrew (recommended)
 brew install claude
 
 # Option B — npm
 npm install -g @anthropic-ai/claude-code</code></pre>
-
       <p><strong>Windows</strong></p>
       <pre><code># npm (requires Node.js 18+)
 npm install -g @anthropic-ai/claude-code</code></pre>
-
-      <p>
-        Verify the install:
-      </p>
+      <p>Verify the install:</p>
       <pre><code>claude --version</code></pre>
-      <p class="small">
-        If the command isn't found, close and reopen your terminal
-        (or restart VS Code) so the updated PATH takes effect.
-      </p>
 
-      <h3>2. Add the origo-bc plugin</h3>
-      <p>
-        Run two terminal commands — Code pulls the
-        <em>origo</em> marketplace straight from our public GitHub
-        repo:
-      </p>
+      <p>Then run two commands:</p>
       <pre><code>claude plugin marketplace add businesscentralal/origo-bc-plugin
 claude plugin install origo-bc@origo</code></pre>
       <p>
         The first command registers the <em>origo</em> marketplace. The
         second pulls the latest <code>origo-bc</code> build and installs
-        it into <code>~/.claude/plugins/</code>. Restart Claude Code
+        it into <code>~/.claude/plugins/</code>. Restart Claude Desktop
         (or open a new session) so the definitions load.
       </p>
 
       <div class="callout">
-        <strong>Also active in Cowork</strong>
-        If you install the plugin in Claude Code, it will also be active
-        in Claude Cowork — you don't need to install it separately in
-        both modes.
+        <strong>Works in both modes</strong>
+        A plugin installed via the CLI is active in both Cowork and
+        Code — no separate installation per mode needed.
       </div>
 
-      <h3>3. Update the plugin</h3>
-      <p>
-        When a new version is released, run:
-      </p>
+      <p><strong>Updating:</strong></p>
       <pre><code>claude plugin update origo-bc@origo</code></pre>
-      <p>
-        Restart Claude Code (or open a new session) after updating.
-      </p>
       <p class="small">
         To remove: <code>claude plugin uninstall origo-bc</code>
       </p>
 
+      <!-- ---- Download ---- -->
+      <h3 id="download">Option B — Download .plugin file</h3>
+      <p>
+        Download the file in a web browser (Edge, Chrome, Firefox — not
+        inside Claude) and drop it into a Cowork chat.
+      </p>
+      <p>
+        <a class="cta" href="origo-bc.plugin" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download origo-bc.plugin
+        </a>
+        <a class="subcta" href="#versions">Or pick a pinned version &rarr;</a>
+      </p>
 
-      <!-- ============================ SHARED ============================ -->
-      <h2 id="entra">Prerequisite — Entra App Registration</h2>
+      <p><strong>Install in Cowork:</strong></p>
+      <ol>
+        <li>Open File Explorer / Finder and go to <code>Downloads</code>.</li>
+        <li>Open a new Cowork chat alongside it.</li>
+        <li>Drag <code>origo-bc.plugin</code> directly into the chat input.</li>
+        <li><strong>Hit Send.</strong> Don't cancel.</li>
+        <li>Claude replies with an install card — click <em>Install</em>.</li>
+      </ol>
+      <p><strong>Or via Settings:</strong>
+        <em>Settings &rarr; Plugins &rarr; Install from file</em>
+        and pick the file.</p>
+
+      <div class="callout">
+        <strong>If no install card appears</strong>
+        Check: (1) you're in <em>Cowork mode</em>, not the regular chat;
+        (2) you dropped the <em>file</em>, not a URL;
+        (3) you hit <em>Send</em> instead of cancelling.
+      </div>
+
+
+      <!-- ============================ ENTRA ============================ -->
+      <h2 id="entra">Entra App Registration</h2>
       <p>
         The MCP server at <code>dynamics.is/api/mcp</code> authenticates
         against <strong>Microsoft Entra</strong> (formerly Azure AD).
-        Before you run <code>/origo-bc-setup</code> you need three
-        values: <em>Tenant ID</em>, <em>Client ID</em>, and
-        <em>Client Secret</em>. You also need to register the app
-        <em>inside BC</em> as a Microsoft Entra Application with the
-        right permission sets.
+        Two authentication methods are supported — choose the one that
+        fits your scenario:
       </p>
 
-      <div class="card" style="margin-bottom:24px;">
-        <p style="margin:0 0 10px;"><strong>Minimum configuration by auth mode</strong></p>
-        <table style="width:100%; font-size:13px; border-collapse:collapse;">
-          <thead>
-            <tr style="text-align:left; border-bottom:2px solid var(--line);">
-              <th style="padding:6px 8px;">Setting</th>
-              <th style="padding:6px 8px;">MCP server<br><span style="font-weight:400;color:var(--muted);">(client credentials)</span></th>
-              <th style="padding:6px 8px;">User auth<br><span style="font-weight:400;color:var(--muted);">(device code)</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;">Allow public client flows</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;"><strong>Yes</strong></td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;">Client secret</td>
-              <td style="padding:6px 8px;"><strong>Yes</strong></td>
-              <td style="padding:6px 8px;">—</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;">Redirect URI</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;">—</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;"><code>app_access</code> (Application)</td>
-              <td style="padding:6px 8px;"><strong>Required</strong></td>
-              <td style="padding:6px 8px;">—</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;"><code>Financials.ReadWrite.All</code> (Delegated)</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;"><strong>Required</strong></td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--line);">
-              <td style="padding:6px 8px;"><code>user_impersonation</code> (Delegated)</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;"><strong>Required</strong></td>
-            </tr>
-            <tr>
-              <td style="padding:6px 8px;"><code>User.Read</code> (Graph, Delegated)</td>
-              <td style="padding:6px 8px;">—</td>
-              <td style="padding:6px 8px;">Optional</td>
-            </tr>
-          </tbody>
-        </table>
-        <p style="margin:10px 0 0; font-size:13px; color:var(--muted);">
-          To support <em>both</em> modes on the same registration
-          (recommended) — add everything. The walkthrough below does
-          exactly that. The <code>offline_access</code> scope (needed for
-          device code refresh tokens) is requested at <em>token time</em>,
-          not in the registration itself.
-        </p>
+      <div class="methods">
+        <div class="method">
+          <h3>Client Secret</h3>
+          <p>
+            The app runs unattended using client credentials. The MCP
+            server uses <code>app_access</code> application permissions.
+            Best for automated access.
+          </p>
+          <a class="jump" href="#auth-secret">Client Secret setup &rarr;</a>
+        </div>
+        <div class="method">
+          <h3>Device Code</h3>
+          <p>
+            The user signs in with their own account. Best when
+            individual users connect via their own BC credentials.
+          </p>
+          <a class="jump" href="#auth-device">Device Code setup &rarr;</a>
+        </div>
       </div>
 
-      <h3>1. Azure side — create the app registration</h3>
+      <!-- ---- Client Secret ---- -->
+      <h3 id="auth-secret">Client Secret setup</h3>
       <p>
-        We follow Microsoft's standard template for a
-        "Business Central Web Service Client" — the same baseline
-        Microsoft uses in their own samples. The registration supports
-        both <em>delegated</em> (a signed-in user) and <em>app-only /
-        client-credentials</em> (the MCP server running unattended).
+        Use this when the MCP server should run unattended (client
+        credentials flow) without a signed-in user.
       </p>
 
-      <p><strong>1a. Register a new app</strong></p>
+      <p><strong>1. Register a new app in Azure</strong></p>
       <ol>
         <li>Open
           <a href="https://portal.azure.com/" target="_blank" rel="noopener">portal.azure.com</a>
-          → <em>Microsoft Entra ID</em> → <em>App registrations</em> →
+          &rarr; <em>Microsoft Entra ID</em> &rarr; <em>App registrations</em> &rarr;
           <em>New registration</em>.</li>
         <li><strong>Name</strong>:
-          <code>Business Central Web Service Client</code>
-          — or <code>&lt;company&gt; BC — Claude</code> if you want to
-          tag a specific environment.</li>
-        <li><strong>Supported account types</strong>: either works —
+          <code>BC Web Service Client</code> or similar.</li>
+        <li><strong>Supported account types</strong>:
           <em>Accounts in this organizational directory only (Single
-          tenant)</em> is the simplest choice when the app only serves
-          your own organization. <em>Accounts in any organizational
-          directory (Multitenant)</em> is useful if the same
-          registration should serve multiple environments or a service
-          provider's customers. The reference example uses
-          <code>AzureADMultipleOrgs</code>, but <em>single-tenant</em>
-          is fine for most installations.</li>
+          tenant)</em> works for most setups.</li>
+        <li><strong>Redirect URI</strong>: leave blank.</li>
+        <li>Click <em>Register</em>.</li>
+      </ol>
+
+      <p><strong>2. API permissions</strong></p>
+      <ol>
+        <li>Go to <em>API permissions</em> &rarr; <em>Add a permission</em>.</li>
+        <li>Select <strong>Dynamics 365 Business Central</strong>.</li>
+        <li>Select <strong>Application permissions</strong> &rarr; <code>app_access</code>.</li>
+        <li>Click <em>Add permissions</em>.</li>
+        <li>Click <em>Grant admin consent for &lt;tenant&gt;</em>
+          and confirm.</li>
+      </ol>
+
+      <p><strong>3. Create a client secret</strong></p>
+      <ol>
+        <li><em>Certificates &amp; secrets</em> &rarr;
+          <em>Client secrets</em> &rarr; <em>New client secret</em>.</li>
+        <li>Description: e.g. <code>Claude MCP</code>. Expires: 12–24 months.</li>
+        <li>Click <em>Add</em>. <strong>Copy the value immediately</strong>
+          — it won't be shown again.</li>
+      </ol>
+
+      <p><strong>4. Copy the values you need</strong></p>
+      <ul>
+        <li><strong>Tenant ID</strong> — <em>Overview</em> &rarr;
+          <em>Directory (tenant) ID</em>.</li>
+        <li><strong>Client ID</strong> — <em>Overview</em> &rarr;
+          <em>Application (client) ID</em>.</li>
+        <li><strong>Client Secret</strong> — the value from step 3.</li>
+      </ul>
+
+      <p>
+        Then proceed to <a href="#bc-side">BC-side registration</a> below.
+      </p>
+
+      <!-- ---- Device Code ---- -->
+      <h3 id="auth-device">Device Code setup</h3>
+      <p>
+        Use this when individual users should connect using their own
+        BC credentials (delegated access). No client secret is needed.
+      </p>
+
+      <p><strong>1. Register a new app in Azure</strong></p>
+      <ol>
+        <li>Open
+          <a href="https://portal.azure.com/" target="_blank" rel="noopener">portal.azure.com</a>
+          &rarr; <em>Microsoft Entra ID</em> &rarr; <em>App registrations</em> &rarr;
+          <em>New registration</em>.</li>
+        <li><strong>Name</strong>:
+          <code>BC Claude - Device Code</code> or similar.</li>
+        <li><strong>Supported account types</strong>:
+          <em>Accounts in this organizational directory only (Single tenant)</em>.</li>
         <li><strong>Redirect URI</strong>: pick
-          <em>Public client/native (mobile &amp; desktop)</em> and
-          enter:
+          <em>Public client/native (mobile &amp; desktop)</em> and enter:
           <pre><code>https://businesscentral.dynamics.com/OAuthLanding.htm</code></pre>
         </li>
         <li>Click <em>Register</em>.</li>
       </ol>
 
-      <p><strong>1b. Authentication — allow public client flows</strong></p>
+      <p><strong>2. Allow public client flows</strong></p>
       <ol>
-        <li>On the new app, open the <em>Authentication</em> tab.</li>
+        <li>On the app, open the <em>Authentication</em> tab.</li>
         <li>At the bottom, under <em>Advanced settings</em>:
-          <strong>Allow public client flows</strong> → <em>Yes</em>.</li>
+          <strong>Allow public client flows</strong> &rarr; <em>Yes</em>.</li>
         <li>Click <em>Save</em>.</li>
       </ol>
 
-      <p><strong>1c. API permissions — four permissions</strong></p>
-      <p>
-        In the <em>API permissions</em> tab click
-        <em>Add a permission</em> and add all four below. Three are
-        <em>Delegated</em> (on behalf of the signed-in user), one is
-        <em>Application</em> (app-only — <strong>required for the MCP
-        server</strong>).
-      </p>
-
+      <p><strong>3. API permissions</strong></p>
+      <ol>
+        <li>Go to <em>API permissions</em> &rarr; <em>Add a permission</em>.</li>
+        <li>Add the following <strong>Delegated</strong> permissions:</li>
+      </ol>
       <div class="card">
-        <p style="margin:0 0 8px;"><strong>Microsoft Graph</strong></p>
+        <p style="margin:0 0 8px;"><strong>Dynamics 365 Business Central</strong></p>
         <ul style="margin-top:0;">
-          <li><code>User.Read</code> — Delegated.</li>
+          <li><code>Financials.ReadWrite.All</code> — Delegated (read/write BC data).</li>
+          <li><code>user_impersonation</code> — Delegated (access-as-user).</li>
         </ul>
-        <p style="margin:12px 0 8px;"><strong>Dynamics 365 Business Central</strong></p>
+        <p style="margin:12px 0 8px;"><strong>Microsoft Graph</strong> (optional)</p>
         <ul style="margin-top:0;">
-          <li><code>Financials.ReadWrite.All</code> — Delegated (read/write BC data on the user's behalf).</li>
-          <li><code>user_impersonation</code> — Delegated (the stock BC access-as-user scope).</li>
-          <li><code>app_access</code> — <strong>Application</strong> (unattended access, used by the MCP server).</li>
+          <li><code>User.Read</code> — Delegated (read user profile).</li>
         </ul>
       </div>
-
-      <ol>
-        <li>Once all four show in the list, click
-          <em>Grant admin consent for &lt;tenant&gt;</em> and confirm.
-          The <em>Status</em> column should turn to a green checkmark
-          for every permission.</li>
+      <ol start="3">
+        <li>Click <em>Grant admin consent for &lt;tenant&gt;</em>
+          and confirm.</li>
       </ol>
 
-      <p><strong>1d. Certificates &amp; secrets — create a client secret</strong></p>
-      <ol>
-        <li><em>Certificates &amp; secrets</em> →
-          <em>Client secrets</em> → <em>New client secret</em>.</li>
-        <li><strong>Description</strong>: use a naming convention so
-          you know who created the secret and when (e.g.
-          <code>ORI1058</code> follows Origo's internal pattern).
-          Makes it easier to rotate later.</li>
-        <li><strong>Expires</strong>: 12–24 months recommended (Azure
-          caps at 24).</li>
-        <li>Click <em>Add</em>. <strong>Copy the value
-          immediately</strong> — only a <em>hint</em> (e.g.
-          <code>Z26…</code>) and the <em>Secret ID</em> remain visible
-          afterwards.</li>
-      </ol>
-
-      <p><strong>1e. Copy the values you need</strong></p>
-      <p>
-        For <code>/origo-bc-setup</code> you need three values. Grab
-        them from Azure:
-      </p>
+      <p><strong>4. Copy the values you need</strong></p>
       <ul>
-        <li><strong>Tenant ID</strong> — <em>Overview</em> →
+        <li><strong>Tenant ID</strong> — <em>Overview</em> &rarr;
           <em>Directory (tenant) ID</em>.</li>
-        <li><strong>Client ID</strong> — <em>Overview</em> →
+        <li><strong>Client ID</strong> — <em>Overview</em> &rarr;
           <em>Application (client) ID</em>.</li>
-        <li><strong>Client Secret</strong> — the value from step 1d
-          (<em>not</em> the <em>Secret ID</em>).</li>
       </ul>
+      <p class="small">
+        No client secret needed — the device code flow uses the
+        <code>offline_access</code> scope at token time.
+      </p>
 
-      <div class="callout">
-        <strong>Don't share the client secret</strong>
-        Keep the value in a password manager. If it's lost, generate a
-        new one — old values can't be displayed again.
-      </div>
+      <p>
+        Then proceed to <a href="#bc-side">BC-side registration</a> below.
+      </p>
 
-      <div class="callout">
-        <strong>Minimal version (MCP only)</strong>
-        If you only use this app for the Claude MCP connection (never
-        for a signed-in user), a single permission is enough:
-        <code>app_access</code> (Application). The redirect URI and
-        <em>Allow public client flows</em> aren't strictly needed in
-        that case either — but it's handy to add them up front so the
-        same registration can be reused by interactive tools (the BC
-        app itself, etc.) later.
-      </div>
-
-      <h3>2. BC side — register the app and grant permissions</h3>
+      <!-- ---- BC side (shared) ---- -->
+      <h3 id="bc-side">BC side — register the app and grant permissions</h3>
+      <p>
+        This step is the same for both Client Secret and Device Code.
+      </p>
       <ol>
         <li>Open Business Central signed in as an admin user.</li>
         <li>Search (Alt+Q) for <em>Microsoft Entra Applications</em>
           and open the page.</li>
-        <li><em>New</em> → the new card looks like this:</li>
+        <li><em>New</em> &rarr; fill in:</li>
       </ol>
       <div class="card">
-        <p style="margin:0;"><strong>General</strong></p>
-        <ul style="margin-top:6px;">
+        <ul style="margin:0;">
           <li><strong>Client ID</strong>: paste the
             <em>Application (client) ID</em> from Azure.</li>
-          <li><strong>Description</strong>: a short name (e.g.
-            <code>Cloud Events Tests</code>).</li>
+          <li><strong>Description</strong>: a short name.</li>
           <li><strong>State</strong>: <em>Enabled</em>.</li>
         </ul>
       </div>
       <ol start="4">
-        <li>On the <em>User Permission Sets</em> tab add, at minimum,
-          the following:</li>
+        <li>On the <em>User Permission Sets</em> tab, add:</li>
       </ol>
       <div class="card">
         <p style="margin:0 0 6px;"><strong>Minimum permissions</strong></p>
         <ul style="margin-top:0;">
-          <li><code>CLOUD EVENTS API</code> — <em>Cloud Events Base</em>
-            / <em>System</em>. <strong>Required.</strong> This is the
-            permission set that grants Claude access to the Cloud Events
-            endpoints and the MCP tooling itself.</li>
-          <li><code>D365 BASIC</code> — <em>Base Application</em> /
-            <em>System</em>. Baseline BC access (reading lists, links,
-            number series).</li>
+          <li><code>CLOUD EVENTS API</code> — <em>Cloud Events Base / System</em>. <strong>Required.</strong></li>
+          <li><code>D365 BASIC</code> — <em>Base Application / System</em>. Baseline BC access.</li>
         </ul>
         <p style="margin:12px 0 6px;"><strong>Data permissions</strong> (pick based on use)</p>
         <ul style="margin-top:0;">
-          <li><code>SUPER (DATA)</code> — <em>System Application</em> /
-            <em>System</em>. Full access to BC data.
-            <em>Easiest setup, but very generous — don't use for third
-            parties.</em></li>
-          <li>Or scoped sets: e.g. <code>D365 READ</code> +
-            <code>D365 SALES</code> for read-only sales review;
-            <code>D365 FIN</code> for finance workflows; etc.</li>
+          <li><code>SUPER (DATA)</code> — full access.
+            <em>Don't use for third parties.</em></li>
+          <li>Or scoped sets: e.g. <code>D365 READ</code> + <code>D365 SALES</code> etc.</li>
         </ul>
-        <p style="margin-bottom:0; font-size:13px; color:var(--muted);">
-          The permissions you attach here control what Claude can see
-          and change in <em>this particular company</em>. Changing them
-          later requires setting <em>State</em> back to
-          <em>Disabled</em> first.
-        </p>
       </div>
-
-      <h3>3. Grant consent</h3>
-      <ol>
-        <li>On the Entra Application card, click
-          <em>Grant Consent</em> (top bar).</li>
-        <li>BC redirects you to Microsoft — sign in as a tenant admin
-          and approve.</li>
-        <li>On success you're returned to BC with a "Consent granted"
-          message. The app is now ready.</li>
+      <ol start="5">
+        <li>Click <em>Grant Consent</em> (top bar).</li>
+        <li>BC redirects to Microsoft — sign in as a tenant admin and approve.</li>
       </ol>
 
       <div class="callout">
         <strong>Separate registrations per environment</strong>
         Create a distinct Entra app (and BC <em>Entra Application</em>
         record) for each environment — e.g. <em>cronus</em>,
-        <em>prod</em>. You can then register each one in Claude via
-        <code>/origo-bc-add-env</code> and switch between them without
-        mixing permissions.
+        <em>prod</em>. Register each in Claude via
+        <code>/origo-bc-add-env</code>.
       </div>
 
-      <h2>First connection (both Cowork and Code)</h2>
+
+      <!-- ============================ FIRST CONNECTION ============================ -->
+      <h2 id="first-connection">First connection</h2>
       <p>Start a fresh chat / session and type:</p>
       <pre><code>/origo-bc-setup</code></pre>
       <p>The wizard asks for:</p>
@@ -1309,16 +1037,13 @@ claude plugin install origo-bc@origo</code></pre>
         <li><strong>MCP URL</strong> — <code>https://dynamics.is/api/mcp</code> by default.</li>
         <li><strong>Tenant ID</strong> — <em>Directory (tenant) ID</em> from Azure.</li>
         <li><strong>Client ID</strong> — <em>Application (client) ID</em> from Azure.</li>
-        <li><strong>Client Secret</strong> — the value you copied in step 1.</li>
-        <li><strong>Environment</strong> — <em>Production</em>, <em>Sandbox</em>, or a named sandbox (e.g. <em>cronus</em>).</li>
+        <li><strong>Client Secret</strong> — the value you copied (Client Secret path only).</li>
+        <li><strong>Environment</strong> — <em>Production</em>, <em>Sandbox</em>, or a named sandbox.</li>
         <li><strong>Company name</strong> — as it appears in BC.</li>
       </ol>
-      <p>Claude then builds the correct connection blob (<code>plain:&lt;base64&gt;</code> on most systems, DPAPI-wrapped on Windows) and runs <code>setup_origo_bc_environment</code>. The MCP server appears in Claude's tool list.</p>
 
-      <h2>Adding more environments</h2>
-      <p>If you work across multiple BC companies:</p>
+      <h3>Adding more environments</h3>
       <pre><code>/origo-bc-add-env</code></pre>
-      <p>Each connection gets its own handle (e.g. <em>prod</em>, <em>test</em>, <em>cronus</em>) and you can switch between them without re-running setup.</p>
 
       <h3>Change the default company</h3>
       <pre><code>/origo-bc-switch-company</code></pre>
@@ -1326,42 +1051,39 @@ claude plugin install origo-bc@origo</code></pre>
       <h3>List everything connected</h3>
       <pre><code>/origo-bc-list-environments</code></pre>
 
+
+      <!-- ============================ TROUBLESHOOTING ============================ -->
       <h2>Troubleshooting</h2>
       <div class="card">
         <h3><code>node: command not found</code></h3>
         <p>Node.js isn't on PATH. Install LTS from
           <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>
-          and restart Cowork.</p>
+          and restart Claude Desktop.</p>
 
         <h3>MCP tools don't show up</h3>
-        <p>Quit Cowork fully (tray icon &rarr; <em>Quit</em>) and relaunch.
+        <p>Quit Claude Desktop fully (tray icon &rarr; <em>Quit</em>) and relaunch.
           MCP servers are only loaded at startup.</p>
 
         <h3>Wrong company in answers</h3>
         <p>Run <code>/origo-bc-switch-company</code> and pick the right
-          one. The change only affects the current chat unless you
-          rerun <code>/origo-bc-setup</code> to make it stick.</p>
+          one.</p>
 
         <h3>"Unauthorized" from the MCP server</h3>
         <p>Credentials expired or were wrong. Run
           <code>/origo-bc-setup</code> again and paste fresh credentials.</p>
       </div>
 
+      <!-- ============================ VERSIONS ============================ -->
       <h2 id="versions">Versions</h2>
       <p>
         The latest URL above is overwritten on every release. If you need
-        to pin a specific version (for reproducibility), use a URL like:
+        to pin a specific version, use a URL like:
       </p>
-      <h4>Cowork (lightweight)</h4>
       <div class="url-row">
-        <a href="origo-bc-cowork-0.2.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-cowork-0.2.0.plugin</a>
-      </div>
-      <h4>Code (full)</h4>
-      <div class="url-row">
-        <a href="origo-bc-0.2.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.2.0.plugin</a>
+        <a href="origo-bc-0.3.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.3.0.plugin</a>
       </div>
       <div class="url-row" style="margin-top:6px;">
-        <a href="origo-bc-0.1.1.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.1.1.plugin</a>
+        <a href="origo-bc-0.2.0.plugin" download>https://origopublic.blob.core.windows.net/resources/mcp/origo-bc-0.2.0.plugin</a>
       </div>
       <p style="margin-top:10px;">
         Version numbers live in <code>plugin.json</code> inside the

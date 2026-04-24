@@ -1,9 +1,23 @@
-# Origo BC — Cowork plugin
+# Origo BC — Claude plugin
 
 Guided integration of Microsoft Dynamics 365 Business Central with Claude via
 the Origo MCP endpoint at `https://dynamics.is/api/mcp`. The plugin bundles
 the local `stdio-proxy` bridge and helper scripts, and ships slash commands
-that walk the user through connecting their BC tenants.
+that walk the user through connecting their BC tenants. Works in both
+**Cowork** and **Code** modes.
+
+## Installation
+
+**Recommended — GitHub Marketplace** (works in both Cowork and Code):
+
+```bash
+claude plugin marketplace add businesscentralal/origo-bc-plugin
+claude plugin install origo-bc@origo
+```
+
+**Alternative — .plugin file** (Cowork only): download `origo-bc.plugin` from
+the [install page](https://origopublic.blob.core.windows.net/resources/mcp/install.html)
+and drop it into a Cowork chat.
 
 ## What it installs
 
@@ -13,8 +27,8 @@ On first use of `/origo-bc-setup`, the plugin copies its bundled scripts to
 %USERPROFILE%\OrigoBC\
 ```
 
-and writes a new entry into the Cowork / Claude Desktop MCP config pointing
-at `stdio-proxy.js`. A connection blob — AES-256-GCM ciphertext produced by
+and writes a new entry into the Claude Desktop MCP config pointing at
+`stdio-proxy.js`. A connection blob — AES-256-GCM ciphertext produced by
 the server's `encrypt_data` endpoint, optionally DPAPI-wrapped on Windows —
 is generated locally and stored in the MCP config args.
 
@@ -40,16 +54,22 @@ directory.
 ## Prerequisites
 
 - **Node.js 18+** on PATH — **required at all times**, not just during
-  setup. Every `bc-*` entry Cowork launches is literally
+  setup. Every `bc-*` entry Claude launches is literally
   `node <path>\dynamics-is.js ...`, so the connection will not start
   without it. `/origo-bc-setup` and `/origo-bc-add-env` both run
   `node --version` up front and refuse to continue if it's missing.
 - **Windows** for the PowerShell flow. On macOS / Linux use the Node helper
   with `--no-dpapi`; protect the resulting config file with filesystem
   permissions or a secret manager.
-- An **Azure AD app registration** with delegated / application access to the
-  target BC tenant. You need the tenant ID, client ID, client secret, and
-  environment name (e.g. `Production`, `UAT`).
+- An **Azure AD app registration** with either:
+  - **Client Secret** (client credentials / unattended): `app_access` Application
+    permission, plus a client secret. You need Tenant ID, Client ID, and Client Secret.
+  - **Device Code** (delegated / user sign-in): `Financials.ReadWrite.All` and
+    `user_impersonation` Delegated permissions, plus "Allow public client flows" enabled.
+    You need Tenant ID and Client ID only (no secret).
+
+See the [install guide](https://origopublic.blob.core.windows.net/resources/mcp/install.html)
+for step-by-step Entra setup for each auth mode.
 
 ## Usage
 
