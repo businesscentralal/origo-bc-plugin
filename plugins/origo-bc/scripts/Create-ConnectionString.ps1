@@ -117,11 +117,16 @@ $ErrorActionPreference = 'Stop'
 $ScriptName = 'Create-ConnectionString'
 
 # ── Validate parameter combinations ──────────────────────────────────────────
-if (-not $DeviceCode -and -not $ClientSecret) {
-    throw "[$ScriptName] Either -ClientSecret or -DeviceCode must be specified."
-}
 if ($DeviceCode -and $ClientSecret) {
     throw "[$ScriptName] -ClientSecret and -DeviceCode are mutually exclusive."
+}
+if (-not $DeviceCode -and -not $ClientSecret) {
+    # Prompt interactively with masked input so the secret never appears on
+    # the command line, in history, or on stdout.
+    $ClientSecret = Read-Host -AsSecureString "Enter BC client secret"
+    if (-not $ClientSecret -or $ClientSecret.Length -eq 0) {
+        throw "[$ScriptName] Client secret is required (or use -DeviceCode)."
+    }
 }
 
 # ── Device-code flow helper ──────────────────────────────────────────────────
