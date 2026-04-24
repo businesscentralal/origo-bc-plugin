@@ -11,7 +11,7 @@ description: >
   AES-256-GCM blob is validated end-to-end and patched into the config
   without a clipboard hand-off.
 metadata:
-  version: "0.5.0"
+  version: "0.5.1"
   author: "Origo hf."
 ---
 
@@ -188,6 +188,20 @@ If the user originally used one method and wants to switch, that's fine
 ### Step 6 — One-shot: generate the blob AND replace the entry (Windows)
 
 Present **one** PowerShell command using `-Nickname <existing-name>`.
+
+**What to pass for `-Nickname`.** The value is the entry's nickname
+*without* the `bc-` prefix — so the `bc-kappi-holding-ehf-` entry is
+addressed as `-Nickname 'kappi-holding-ehf-'`. Current versions of
+`Create-ConnectionString.ps1` (≥ the nickname-normalization fix) also
+accept the full entry key verbatim and strip the leading `bc-` for you,
+printing a yellow notice when they do. Older versions of the script do
+**not** strip, and passing `bc-kappi-holding-ehf-` there silently
+creates a *second*, duplicate `bc-bc-kappi-holding-ehf-` entry instead
+of replacing the intended one. When in doubt, pass the bare nickname.
+If the user already has a `bc-bc-*` duplicate from a pre-fix run, point
+them at `/origo-bc-list-environments` and have them remove the wrong
+entry manually — the script only knows how to replace, not merge.
+
 `Create-ConnectionString.ps1` will:
 
 1. Encrypt the credentials via `encrypt_data` on the MCP server

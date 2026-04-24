@@ -70,6 +70,12 @@
     config. The config path is auto-detected (MSIX vs classic install) and
     written BOM-free so Claude's JSON parser accepts it.
 
+    A leading 'bc-' on the value is stripped automatically. That means you
+    can pass either the short nickname (e.g. 'kappi-holding') or the full
+    existing entry key (e.g. 'bc-kappi-holding') and get the same result.
+    Without this, passing an existing entry key verbatim produces a
+    duplicate like 'bc-bc-kappi-holding' in the MCP config.
+
 .PARAMETER CompanyId
     Optional default company GUID to include as the third positional arg
     in the MCP entry's `args` array. Required format: 8-4-4-4-12 hex GUID.
@@ -199,6 +205,16 @@ if (-not $DeviceCode -and -not $ClientSecret) {
 # -Nickname triggers direct config-write. It needs a DPAPI-wrapped blob
 # (stdio-proxy.js requires "dpapi:" on Windows) and a well-formed CompanyId.
 if ($Nickname) {
+    # Normalize: strip a leading 'bc-' so the caller can pass either the
+    # short nickname ('kappi-holding') or the full entry key
+    # ('bc-kappi-holding'). Without this, feeding the full key back in —
+    # which is what /origo-bc-update-env and /origo-bc-list-environments
+    # show on screen — produces a duplicate 'bc-bc-<name>' entry.
+    if ($Nickname -match '^bc-') {
+        $original = $Nickname
+        $Nickname = $Nickname -replace '^bc-', ''
+        Write-Host "[$ScriptName] Stripped leading 'bc-' from -Nickname '$original' -> '$Nickname' (the 'bc-' prefix is added automatically)." -ForegroundColor Yellow
+    }
     if ($NoDpapi) {
         throw "[$ScriptName] -Nickname writes a Windows MCP config entry which requires a DPAPI-wrapped blob. Drop -NoDpapi or drop -Nickname."
     }
