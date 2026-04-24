@@ -93,15 +93,35 @@ the `dynamics-is.js` path) starts with `plain:`, tell the user:
 
 ### Step 4 — Optionally update local scripts
 
-Compare the bundled plugin scripts against `%USERPROFILE%\OrigoBC\`. If
-the plugin ships newer versions (check file size or a version comment in
-the script header), offer to update:
+Offer to re-download the latest scripts from the public GitHub mirror:
 
 > Your local scripts in `%USERPROFILE%\OrigoBC\` may be outdated. Update
 > them? (Yes / Skip)
 
-If yes, copy from the plugin's `scripts/` folder (same as `/origo-bc-setup`
-Step 2).
+If yes, give the user the download block (same as `/origo-bc-setup`
+Step 2):
+
+**Windows PowerShell:**
+
+```powershell
+$dir = "$env:USERPROFILE\OrigoBC"
+$base = 'https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts'
+@('dynamics-is.js', 'Create-ConnectionString.ps1', 'create-connection-string.js') | ForEach-Object {
+    Invoke-WebRequest -Uri "$base/$_" -OutFile "$dir\$_"
+    Write-Host "Updated $_" -ForegroundColor Green
+}
+```
+
+**macOS / Linux:**
+
+```bash
+dir="$HOME/OrigoBC"
+base='https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts'
+for f in dynamics-is.js Create-ConnectionString.ps1 create-connection-string.js; do
+    curl -fsSL "$base/$f" -o "$dir/$f"
+    echo "Updated $f"
+done
+```
 
 ### Step 5 — Collect coordinates
 

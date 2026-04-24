@@ -33,11 +33,35 @@ Before doing anything:
    > from <https://nodejs.org/> (LTS is fine), open a new Cowork session
    > so PATH refreshes, then re-run `/origo-bc-add-env`.
 
-2. `%USERPROFILE%\OrigoBC\dynamics-is.js` exists. If it doesn't, stop and
-   tell the user:
+2. `%USERPROFILE%\OrigoBC\dynamics-is.js` exists. If it doesn't, offer to
+   download the scripts directly from the public GitHub mirror:
 
-   > It looks like Origo BC has not been set up on this machine yet. Run
-   > `/origo-bc-setup` first.
+   **Windows PowerShell:**
+
+   ```powershell
+   $dir = "$env:USERPROFILE\OrigoBC"
+   New-Item -ItemType Directory -Force -Path $dir | Out-Null
+   $base = 'https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts'
+   @('dynamics-is.js', 'Create-ConnectionString.ps1', 'create-connection-string.js') | ForEach-Object {
+       Invoke-WebRequest -Uri "$base/$_" -OutFile "$dir\$_"
+       Write-Host "Downloaded $_" -ForegroundColor Green
+   }
+   ```
+
+   **macOS / Linux:**
+
+   ```bash
+   dir="$HOME/OrigoBC"
+   mkdir -p "$dir"
+   base='https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts'
+   for f in dynamics-is.js Create-ConnectionString.ps1 create-connection-string.js; do
+       curl -fsSL "$base/$f" -o "$dir/$f"
+       echo "Downloaded $f"
+   done
+   ```
+
+   Alternatively, redirect the user to `/origo-bc-setup` for the full
+   guided experience.
 
 ## What this command does
 

@@ -35,11 +35,10 @@ by the PowerShell / Node helper running in the user's own terminal.
 1. **Verify Node.js is installed and on PATH.** Every `bc-*` MCP entry
    Cowork launches is `node <path>\dynamics-is.js ...`, so without Node
    the connection cannot run.
-2. Delivers the three bundled scripts (`dynamics-is.js`,
-   `Create-ConnectionString.ps1`, `create-connection-string.js`) to the
-   user via `mcp__cowork__present_files`, and asks them to save the
-   cards into `%USERPROFILE%\OrigoBC\` (creating that folder with a
-   short PowerShell line first).
+2. Downloads the three scripts (`dynamics-is.js`,
+   `Create-ConnectionString.ps1`, `create-connection-string.js`) from
+   the public GitHub repository into `%USERPROFILE%\OrigoBC\`
+   (creating that folder first).
 3. Asks the user (one question at a time via `AskUserQuestion`) for:
    - A short nickname for this tenant (used as MCP key `bc-<nickname>`).
    - Azure AD **tenant ID**.
@@ -88,12 +87,10 @@ by the PowerShell / Node helper running in the user's own terminal.
 - If `%USERPROFILE%\OrigoBC\dynamics-is.js` already exists, ask before
   overwriting; otherwise just add the new config entry (use `/origo-bc-add-env`
   for that flow when the install is clearly already present).
-- Use `${CLAUDE_PLUGIN_ROOT}/scripts/` to locate the bundled scripts in
-  the plugin; never hardcode absolute paths or session-scoped UUIDs.
-  When delivering scripts to the user on Windows, do not `cp` from that
-  path via the `Bash` tool — it resolves to the Linux sandbox and the
-  Windows form is not a real on-disk location. Use
-  `mcp__cowork__present_files` instead.
+- Scripts are downloaded from the public GitHub mirror at
+  `https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts/`.
+  Never reference `${CLAUDE_PLUGIN_ROOT}` or sandbox paths — they are
+  not accessible from the user's real filesystem.
 
 ## Step-by-step script
 
@@ -128,41 +125,44 @@ recognized` on restart, ask the user to run `node --version` in their
 own PowerShell window and install the Windows LTS build from
 <https://nodejs.org/> if missing.
 
-### Step 2 — Deliver the three scripts into OrigoBC
+### Step 2 — Download the three scripts into OrigoBC
 
-The `Bash` tool runs in a Linux sandbox that can't see the user's home
-directory, so don't try to `cp` the scripts into `$USERPROFILE` from
-there. Instead, hand the files to the user via `mcp__cowork__present_files`
-and ask them to drop the cards into `%USERPROFILE%\OrigoBC\`.
+The scripts are hosted on the public GitHub mirror. Give the user a
+ready-to-paste block that creates the target folder and downloads all
+three files in one go.
 
-1. Call `mcp__cowork__present_files` with the three paths under
-   `${CLAUDE_PLUGIN_ROOT}/scripts/`:
+**GitHub raw base URL:**
+```
+https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts
+```
 
-   ```
-   ${CLAUDE_PLUGIN_ROOT}/scripts/dynamics-is.js
-   ${CLAUDE_PLUGIN_ROOT}/scripts/Create-ConnectionString.ps1
-   ${CLAUDE_PLUGIN_ROOT}/scripts/create-connection-string.js
-   ```
+**Windows PowerShell:**
 
-   If `present_files` rejects the Windows-style form of those paths (it
-   can, depending on the host), fall back to the sandbox form visible
-   under `/sessions/<session-id>/mnt/.remote-plugins/<plugin-dir>/scripts/`.
+```powershell
+$dir = "$env:USERPROFILE\OrigoBC"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+$base = 'https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts'
+@('dynamics-is.js', 'Create-ConnectionString.ps1', 'create-connection-string.js') | ForEach-Object {
+    Invoke-WebRequest -Uri "$base/$_" -OutFile "$dir\$_"
+    Write-Host "Downloaded $_" -ForegroundColor Green
+}
+```
 
-2. Print this one-liner for the user to run in their own PowerShell
-   window so the destination folder exists before they save the files:
+**macOS / Linux:**
 
-   ```powershell
-   New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\OrigoBC" | Out-Null
-   ```
+```bash
+dir="$HOME/OrigoBC"
+mkdir -p "$dir"
+base='https://raw.githubusercontent.com/businesscentralal/origo-bc-plugin/main/plugins/origo-bc/scripts'
+for f in dynamics-is.js Create-ConnectionString.ps1 create-connection-string.js; do
+    curl -fsSL "$base/$f" -o "$dir/$f"
+    echo "Downloaded $f"
+done
+```
 
-   On macOS / Linux use `mkdir -p "$HOME/OrigoBC"` instead.
-
-3. Tell the user to save each of the three presented cards into
-   `%USERPROFILE%\OrigoBC\` (or `$HOME/OrigoBC`).
-
-4. If `%USERPROFILE%\OrigoBC\dynamics-is.js` already exists from a prior
-   setup, ask before overwriting; otherwise redirect the user to
-   `/origo-bc-add-env`.
+If `%USERPROFILE%\OrigoBC\dynamics-is.js` already exists from a prior
+setup, ask before overwriting; otherwise redirect the user to
+`/origo-bc-add-env`.
 
 ### Step 3 — Collect BC coordinates
 
