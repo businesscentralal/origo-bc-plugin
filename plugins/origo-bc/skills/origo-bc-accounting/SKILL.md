@@ -123,6 +123,56 @@ The server's `resolveConn` accepts **only** AES-256-GCM encrypted blobs.
 `plain:<base64>` blobs are **rejected** as of v0.3.0 — the server returns a
 migration error directing the user to re-run the connection script.
 
+## WhoAmI — per-company identity
+
+The `who_am_i` tool calls `Help.WhoAmI.Get` on a specific company.
+**Every company you talk to requires its own WhoAmI call** — identity,
+roles, and context vary per company.
+
+### What WhoAmI returns
+
+The response describes who is calling from BC's perspective:
+
+- **User** — the authenticated BC user or app registration
+- **Resource** — the linked BC resource record (if any)
+- **Salesperson** — the linked salesperson/purchaser code
+- **Employee** — the linked employee record
+- **Language** — the user's configured language (LCID)
+- **Roles / permissions** — what the caller can access
+- **System prompt** (optional) — environment-specific AI instructions
+  configured by the BC administrator
+
+Use these details to personalise responses, resolve "my" references
+(e.g. "my customers" → salesperson filter), and respect language
+preferences.
+
+### Cross-entity linking via Registration Number
+
+If the WhoAmI employee record contains a **social security number**
+(kennitala), that number is typically the same value stored in the
+**Registration No.** field on Customer, Vendor, and Contact records.
+Use it to discover which customer/vendor/contact belongs to the calling
+user — for example, to resolve "my company" or "my account" queries.
+
+### System prompt handling
+
+If the WhoAmI response contains a `systemPrompt`:
+
+- Inject it into the AI session context for that company.
+- Different companies may return different prompts.
+- If absent or empty, no additional context is needed.
+
+### Recommended session flow
+
+```
+1. validate_connection → confirm auth + get company list
+2. For each company the session talks to:
+   a. Call who_am_i with companyId
+   b. Read identity fields (user, resource, salesperson, employee, language)
+   c. If systemPrompt exists: inject into session context for that company
+3. Use identity to personalise queries and filter data
+```
+
 ### How the blob is produced
 
 1. The helper script (`Create-ConnectionString.ps1` on Windows,
