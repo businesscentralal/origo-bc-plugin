@@ -43,6 +43,11 @@ company without touching the connection blob.
 
 ## Guardrails
 
+- **Never** ask for the client secret or refresh token in chat. If the
+  user volunteers either, refuse to store it and instruct them to use
+  only the PowerShell / Node helper in their own terminal.
+- **Never** attempt to decrypt or inspect the AES blob. It is opaque
+  ciphertext that only the server can decrypt.
 - **Don't** touch the connection blob. The only change is the third
   element of `args`.
 - **Don't** create new entries — this command only edits existing ones.
@@ -50,6 +55,23 @@ company without touching the connection blob.
   `/origo-bc-setup`.
 - Validate the chosen company GUID matches one of the companies returned
   by `list_companies` before writing.
+
+## Windows PowerShell pitfalls — READ BEFORE WRITING COMMANDS
+
+This command writes the MCP config, so the same encoding / path traps
+from `/origo-bc-setup` apply:
+
+1. **`Set-Content -Encoding UTF8` adds a BOM in PS 5.1** — Claude's JSON
+   parser rejects the config with `Unexpected token '\uFEFF'`. Always write
+   the config via
+   `[System.IO.File]::WriteAllText($cfgPath, $json, (New-Object System.Text.UTF8Encoding($false)))`.
+
+2. **The Claude config path differs between MSIX and classic installs.**
+   Store/MSIX-packaged Claude redirects `%APPDATA%\Claude\` writes into
+   `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\`.
+   Auto-detect both paths; if both exist, the MSIX path wins.
+
+Rule of thumb: **config JSON — BOM off.**
 
 ## Step-by-step
 
