@@ -250,6 +250,38 @@
     span[data-lang] { display: none; }
     html[lang="is"] span[data-lang="is"],
     html[lang="en"] span[data-lang="en"] { display: inline; }
+    /* Visual step guide */
+    .steps { counter-reset: step; margin: 20px 0 24px; }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-body { flex: 1; min-width: 0; }
+    .step-body strong { display: block; margin-bottom: 4px; }
+    .step-body p { margin: 0; font-size: 14px; color: var(--muted); }
+    .step-img {
+      margin-top: 10px;
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -393,6 +425,76 @@ claude plugin install origo-bc@origo</code></pre>
       <p class="small">
         Til að fjarlægja: <code>claude plugin uninstall origo-bc</code>
       </p>
+
+      <!-- ---- Cowork Marketplace visual guide ---- -->
+      <h3 id="cowork-marketplace">Uppsetning í gegnum Cowork viðmót</h3>
+      <p>
+        Ef þú ert í Cowork geturðu líka sett upp plugin-ið beint í viðmótinu
+        án CLI. Hér eru skrefin:
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Smelltu á Customize</strong>
+            <p>Í hliðarstikunni í Cowork, smelltu á <em>Customize</em>.</p>
+            <!-- IMAGE: step1.png — Cowork sidebar showing Customize option -->
+            <img class="step-img" alt="Cowork hliðarstika — Customize valmöguleiki" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Bættu við plugin</strong>
+            <p>Smelltu á <strong>+</strong> við hliðina á <em>Personal plugins</em> eða <em>Add plugin</em> hnappinn.</p>
+            <!-- IMAGE: step2.png — Customize page with Add plugin button -->
+            <img class="step-img" alt="Customize síða — Add plugin hnappur" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Veldu Add marketplace</strong>
+            <p>Smelltu á <em>Create plugin</em> &rarr; <em>Add marketplace</em>.</p>
+            <!-- IMAGE: step3.png — Create plugin menu with Add marketplace option -->
+            <img class="step-img" alt="Create plugin valmynd — Add marketplace" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Sláðu inn marketplace slóð og smelltu á Sync</strong>
+            <p>Í URL reitinn, sláðu inn: <code>businesscentralal/origo-bc-plugin</code> og smelltu á <em>Sync</em>.</p>
+            <!-- IMAGE: step4.png — Add marketplace dialog with URL entered -->
+            <img class="step-img" alt="Add marketplace gluggi — businesscentralal/origo-bc-plugin" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>Staðfestu í Personal flipanum</strong>
+            <p>Plugin-ið birtist undir <em>Personal</em> flipanum sem <strong>Origo bc</strong> frá Origo hf.</p>
+            <!-- IMAGE: step5.png — Directory showing Origo bc under Personal tab -->
+            <img class="step-img" alt="Plugin Directory — Origo bc undir Personal" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <strong>Smelltu á Install</strong>
+            <p>Opnaðu plugin-ið og smelltu á <em>Install</em>. Þú sérð 6 skills sem fylgja með.</p>
+            <!-- IMAGE: step6.png — Plugin detail page with Install button and 6 skills -->
+            <img class="step-img" alt="Origo bc plugin — Install hnappur og 6 skills" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">7</div>
+          <div class="step-body">
+            <strong>Keyra /origo-bc-setup</strong>
+            <p>Opnaðu nýtt spjall og sláðu inn <code>/origo-bc-setup</code> til að tengja við Business Central.</p>
+          </div>
+        </div>
+      </div>
 
       <!-- ---- Download ---- -->
       <h3 id="download">Leið B — Sækja .plugin skrá</h3>
@@ -792,6 +894,76 @@ claude plugin install origo-bc@origo</code></pre>
       <p class="small">
         To remove: <code>claude plugin uninstall origo-bc</code>
       </p>
+
+      <!-- ---- Cowork Marketplace visual guide ---- -->
+      <h3 id="cowork-marketplace">Installing via the Cowork UI</h3>
+      <p>
+        If you're in Cowork, you can also install the plugin directly
+        through the UI — no CLI needed. Here are the steps:
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Click Customize</strong>
+            <p>In the Cowork sidebar, click <em>Customize</em>.</p>
+            <!-- IMAGE: step1.png — Cowork sidebar showing Customize option -->
+            <img class="step-img" alt="Cowork sidebar — Customize option" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Add a plugin</strong>
+            <p>Click the <strong>+</strong> next to <em>Personal plugins</em> or the <em>Add plugin</em> button.</p>
+            <!-- IMAGE: step2.png — Customize page with Add plugin button -->
+            <img class="step-img" alt="Customize page — Add plugin button" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Select Add marketplace</strong>
+            <p>Click <em>Create plugin</em> &rarr; <em>Add marketplace</em>.</p>
+            <!-- IMAGE: step3.png — Create plugin menu with Add marketplace option -->
+            <img class="step-img" alt="Create plugin menu — Add marketplace" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Enter the marketplace URL and click Sync</strong>
+            <p>In the URL field, type: <code>businesscentralal/origo-bc-plugin</code> and click <em>Sync</em>.</p>
+            <!-- IMAGE: step4.png — Add marketplace dialog with URL entered -->
+            <img class="step-img" alt="Add marketplace dialog — businesscentralal/origo-bc-plugin" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>Verify in the Personal tab</strong>
+            <p>The plugin appears under the <em>Personal</em> tab as <strong>Origo bc</strong> by Origo hf.</p>
+            <!-- IMAGE: step5.png — Directory showing Origo bc under Personal tab -->
+            <img class="step-img" alt="Plugin Directory — Origo bc under Personal" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <strong>Click Install</strong>
+            <p>Open the plugin and click <em>Install</em>. You'll see 6 skills included.</p>
+            <!-- IMAGE: step6.png — Plugin detail page with Install button and 6 skills -->
+            <img class="step-img" alt="Origo bc plugin — Install button and 6 skills" src="">
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">7</div>
+          <div class="step-body">
+            <strong>Run /origo-bc-setup</strong>
+            <p>Open a new chat and type <code>/origo-bc-setup</code> to connect to Business Central.</p>
+          </div>
+        </div>
+      </div>
 
       <!-- ---- Download ---- -->
       <h3 id="download">Option B — Download .plugin file</h3>

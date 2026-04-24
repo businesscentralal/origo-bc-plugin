@@ -185,7 +185,8 @@ function Invoke-DeviceCodeFlow {
                 $interval += 5
                 continue
             } else {
-                throw "[$ScriptName] Device code flow failed: $($err.error_description ?? $_.Exception.Message)"
+                $errorDesc = if ($err.error_description) { $err.error_description } else { $_.Exception.Message }
+                throw "[$ScriptName] Device code flow failed: $errorDesc"
             }
         }
     }
