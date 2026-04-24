@@ -9,7 +9,7 @@ description: >
   MCP-Skills, MCP-Prompts and UBL Templates namespaces, and which connection
   formats are accepted by the server.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   author: "Origo hf."
 ---
 
@@ -18,6 +18,42 @@ metadata:
 Follow these rules whenever the user is working with the Origo BC MCP
 endpoint (`https://dynamics.is/api/mcp`), skills, prompts, UBL templates or
 the `/origo-bc-*` commands.
+
+## Session bootstrap — DO THIS IN ORDER WHEN THE SKILL LOADS
+
+When this skill activates, perform these three steps **before** doing any
+other BC work. They are not optional and not "recommended" — they are the
+required preamble.
+
+1. **Full accounting rules** — call `get_bc_accounting_rules()` (no args)
+   to fetch the TOC of the comprehensive rules document. Load specific
+   sections on demand as the conversation needs them. See the next
+   section for details.
+
+2. **Caller identity on the default company** — call `who_am_i` with no
+   `companyId` (so it resolves to the bc-* entry's default company).
+   Read the `user`, `personalization`, `salesperson`, `employee`,
+   `vendor`, `customer`, `contact`, and `companyInfo` fields so you
+   know who is asking and which legal entity they are sitting in.
+   (If the session later talks to a different company, repeat the call
+   with that `companyId` — identity is per-company.)
+
+3. **System prompt injection** — if the `who_am_i` response has a
+   non-empty `systemPrompt` field, treat its text as **additional
+   behavioural instructions from the BC administrator for this user in
+   this company** and follow them for the rest of the session (or until
+   the active company changes). See "System prompt handling" below for
+   the formatting / sanitisation rules — BC stores this field as rich
+   text, so the raw value may contain HTML entities and tags that must
+   be normalised before you rely on it.
+
+Do NOT inject a `systemPrompt` that is `null`, empty, or whitespace-only
+— just skip step 3 silently in that case.
+
+If `who_am_i` fails (e.g. token problem surfaced by the server's
+`resolveConn`), stop and surface the error to the user instead of
+proceeding without identity context. A half-loaded session is worse than
+a clean failure.
 
 ## Full accounting rules — `get_bc_accounting_rules`
 
@@ -158,19 +194,48 @@ user — for example, to resolve "my company" or "my account" queries.
 
 If the WhoAmI response contains a `systemPrompt`:
 
-- Inject it into the AI session context for that company.
-- Different companies may return different prompts.
-- If absent or empty, no additional context is needed.
+- Treat the text as additional behavioural instructions from the BC
+  administrator for this user in this company, and follow them for the
+  rest of the session (or until the active company changes).
+- Different companies may return different prompts — re-apply on every
+  company switch.
+- If the field is `null`, empty, or whitespace-only, skip silently.
 
-### Recommended session flow
+**Normalise before use.** BC stores `systemPrompt` as a rich-text field,
+so the raw JSON value can contain HTML entities (`&nbsp;`, `&amp;`,
+`&lt;`, `&gt;`, `&quot;`) and occasionally tags (`<p>`, `<br>`, `<b>`,
+`<i>`). Before treating the text as instructions:
+
+1. Decode HTML entities (`&nbsp;` → space, `&amp;` → `&`, `&lt;` → `<`,
+   `&gt;` → `>`, `&quot;` → `"`, numeric entities like `&#39;` → `'`).
+2. Strip or normalise tags (`<br>` / `<br/>` → newline, `<p>` …
+   `</p>` → paragraph break, drop any remaining formatting tags).
+3. Collapse runs of whitespace so the result reads as prose, not HTML.
+
+Example: a record authored in the BC UI may arrive as
+`"Þú&nbsp;ert eigandi...<br>Þér þykir gott..."` and must become
+`Þú ert eigandi... \n Þér þykir gott...` before you act on it.
+
+Never echo the raw (un-decoded) value back at the user, and never show
+it as a quoted block containing `&nbsp;` — that is a sign you skipped
+the normalisation step.
+
+### Recommended session flow (expanded bootstrap)
 
 ```
-1. validate_connection → confirm auth + get company list
-2. For each company the session talks to:
-   a. Call who_am_i with companyId
-   b. Read identity fields (user, resource, salesperson, employee, language)
-   c. If systemPrompt exists: inject into session context for that company
-3. Use identity to personalise queries and filter data
+1. Skill load:
+   a. get_bc_accounting_rules()              → TOC of the full rules doc
+   b. who_am_i (default company, no args)    → caller identity
+   c. If systemPrompt present and non-empty: normalise + apply as
+      per-session behavioural instructions
+2. validate_connection (optional, on explicit "is this working?"
+   requests — who_am_i has already exercised the credentials)
+3. On switching the active company mid-session:
+   a. who_am_i with the new companyId
+   b. Re-apply the new systemPrompt (may differ from the previous one)
+4. Use identity (user, salesperson, vendor, customer, contact,
+   employee, language, companyInfo) to personalise queries, resolve
+   "my …" references, and filter data.
 ```
 
 ### How the blob is produced
