@@ -46,7 +46,7 @@ The plugin follows [semantic versioning](https://semver.org/).
 
   ```
   claude plugin marketplace add businesscentralal/origo-bc-plugin
-  claude plugin install origo-bc@origo
+  claude plugin install origo-bc@origo-bc
   ```
 
 - Cowork organization admins can point at the same GitHub URL when
@@ -78,7 +78,7 @@ The plugin follows [semantic versioning](https://semver.org/).
 
   ```
   claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
-  claude plugin install origo-bc@origo
+  claude plugin install origo-bc@origo-bc
   ```
 - Upload auth comes from the `CI Build Agent` variable group
   (`StorageBaseURL`, `StorageSasToken`).

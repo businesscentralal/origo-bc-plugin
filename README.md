@@ -82,7 +82,7 @@ Claude Code users install with one short command pair:
 
 ```
 claude plugin marketplace add businesscentralal/origo-bc-plugin
-claude plugin install origo-bc@origo
+claude plugin install origo-bc@origo-bc
 ```
 
 Cowork organization admins can point the same URL at their "org plugin"
@@ -154,17 +154,17 @@ Claude Code resolves the plugin source directly from the GitHub mirror:
 
 ```
 claude plugin marketplace add businesscentralal/origo-bc-plugin
-claude plugin install origo-bc@origo
+claude plugin install origo-bc@origo-bc
 ```
 
 Equivalent blob-based command (fallback, same content):
 
 ```
 claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
-claude plugin install origo-bc@origo
+claude plugin install origo-bc@origo-bc
 ```
 
-To update later: `claude plugin update origo-bc@origo`.
+To update later: `claude plugin update origo-bc@origo-bc`.
 To remove: `claude plugin uninstall origo-bc`.
 
 ### Claude Desktop (regular chat app)

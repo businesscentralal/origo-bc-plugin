@@ -195,7 +195,7 @@ steps:
   # add it with a single command:
   #
   #   claude plugin marketplace add https://origopublic.blob.core.windows.net/resources/mcp
-  #   claude plugin install origo-bc@origo
+  #   claude plugin install origo-bc@origo-bc
   #
   # The `.plugin` file above still exists for manual drag-and-drop
   # installs (Cowork path). This step is purely additive.
@@ -244,7 +244,7 @@ steps:
       echo ""
       echo "Consumers can add with:"
       echo "  claude plugin marketplace add $MARKETPLACE_ROOT"
-      echo "  claude plugin install origo-bc@origo"
+      echo "  claude plugin install origo-bc@origo-bc"
     env:
       STORAGE_BASE_URL: $(StorageBaseURL)
       STORAGE_SAS_TOKEN: $(StorageSasToken)
@@ -304,7 +304,7 @@ steps:
   # distribution surface for Claude Code users:
   #
   #   claude plugin marketplace add businesscentralal/origo-bc-plugin
-  #   claude plugin install origo-bc@origo
+  #   claude plugin install origo-bc@origo-bc
   #
   # The blob-hosted marketplace and the .plugin file remain available
   # (see steps above) — this mirror is purely additive and gives us a
@@ -346,7 +346,7 @@ steps:
       echo ""
       echo "Claude Code users can install with:"
       echo "  claude plugin marketplace add ${GITHUB_OWNER}/${GITHUB_REPO}"
-      echo "  claude plugin install origo-bc@origo"
+      echo "  claude plugin install origo-bc@origo-bc"
     env:
       GITHUB_PAT: $(GitHubPat)
     displayName: Mirror main to public GitHub repo

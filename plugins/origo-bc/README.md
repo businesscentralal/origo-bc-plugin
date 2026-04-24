@@ -12,7 +12,7 @@ that walk the user through connecting their BC tenants. Works in both
 
 ```bash
 claude plugin marketplace add businesscentralal/origo-bc-plugin
-claude plugin install origo-bc@origo
+claude plugin install origo-bc@origo-bc
 ```
 
 **Alternative — .plugin file** (Cowork only): download `origo-bc.plugin` from
