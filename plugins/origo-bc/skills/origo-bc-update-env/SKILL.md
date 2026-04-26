@@ -285,25 +285,29 @@ broken configs in a row. Expect messages like:
   — only use when you have reason to believe the credentials are
   correct and the server is temporarily unreachable).
 
-### Step 8 — Fallback: macOS / Linux
+### Step 8 — macOS / Linux (one-shot via JS helper)
 
-`Create-ConnectionString.ps1 -Nickname` is Windows-only (DPAPI). On
-macOS / Linux use the cross-platform Node helper and patch the config
-manually:
+The cross-platform Node helper supports `--nickname` one-shot mode.
+On macOS the blob is Keychain-bound (`keychain:`); on Linux it falls
+back to `plain:`. The script replaces the existing `bc-<nickname>`
+entry in the config — same behaviour as the PowerShell script.
 
 ```bash
 cd ~/OrigoBC
 node create-connection-string.js \
   --tenant      '<tenant>' \
   --client      '<client>' \
-  --environment '<env>'          # add --device-code for device flow
+  --environment '<env>' \
+  --nickname    '<nickname>' \
+  --company-id  '<default-company-guid>'   # optional
+  # add --device-code for device flow
 ```
 
-The Node helper performs the same `list_companies` round-trip
-validation and aborts with a clear error if it fails. On success it
-copies a `plain:<ciphertext>` blob to the clipboard. Replace the
-second element of the existing `bc-<nickname>` entry's `args` array
-with that value. Do not print the blob back in chat.
+The script auto-detects the Claude Desktop config path
+(`~/Library/Application Support/Claude/` on macOS,
+`~/.config/Claude/` on Linux). Override with `--config-path`.
+Validation and config write happen in one invocation — no clipboard
+round-trip. Do not print the blob back in chat.
 
 ### Step 9 — Restart and verify
 

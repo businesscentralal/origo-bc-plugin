@@ -366,24 +366,29 @@ Expect messages like:
   unavailable and you have reason to believe the credentials are
   correct).
 
-### Step 5 — Fallback: macOS / Linux (clipboard hand-off)
+### Step 5 — macOS / Linux (one-shot via JS helper)
 
-On non-Windows platforms `Create-ConnectionString.ps1` is not available
-and DPAPI doesn't exist, so the one-shot mode doesn't apply. Use the
-cross-platform Node helper, which still emits a `plain:` blob to the
-clipboard:
+The cross-platform Node helper supports `--nickname` one-shot mode
+just like the PowerShell script. On macOS the blob is Keychain-bound
+(`keychain:`); on Linux it falls back to `plain:`. The config path
+is auto-detected per platform.
 
 ```bash
 cd ~/OrigoBC
 node create-connection-string.js \
   --tenant      '<tenant>' \
   --client      '<client>' \
-  --environment '<env>'           # add --device-code for device flow
+  --environment '<env>' \
+  --nickname    '<nickname>' \
+  --company-id  '<default-company-guid>'   # optional
+  # add --device-code for device flow
 ```
 
-Then manually add a `bc-<nickname>` entry to the Claude Desktop MCP
-config. Do not print the blob back in chat; do not echo it in tool
-calls that surface content to the UI beyond what's strictly required.
+The script auto-detects the Claude Desktop config path
+(`~/Library/Application Support/Claude/` on macOS,
+`~/.config/Claude/` on Linux). Override with `--config-path`.
+Validation and config write happen in one invocation — no clipboard
+round-trip. Do not print the blob back in chat.
 
 ### Step 6 — Restart and verify
 

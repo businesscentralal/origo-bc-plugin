@@ -263,12 +263,25 @@ If the user did not supply a default company GUID, omit the
 `-CompanyId` line entirely — the script leaves the third element out of
 the `args` array.
 
-macOS / Linux (`create-connection-string.js`) still uses the legacy
-clipboard hand-off because DPAPI is Windows-only; the `-Nickname`
-one-shot mode is Windows-only. On Unix, fall back to the two-step flow
-described in `/origo-bc-setup`. The JS helper still performs the
-`list_companies` validation before emitting the blob to the clipboard,
-so a misconfigured tenant/client/secret is surfaced immediately.
+**macOS / Linux** — the JS helper also supports `--nickname`
+one-shot mode. On macOS the blob is Keychain-bound (`keychain:`);
+on Linux it falls back to `plain:`. Example:
+
+```bash
+cd ~/OrigoBC
+node create-connection-string.js \
+  --tenant      '<tenant>' \
+  --client      '<client>' \
+  --environment '<env>' \
+  --nickname    '<nickname>' \
+  --company-id  '<default-company-guid>'   # optional
+  # add --device-code for device flow
+```
+
+The JS helper performs the same `list_companies` round-trip
+validation and auto-detects the Claude Desktop config path per
+platform (`~/Library/Application Support/Claude/` on macOS,
+`~/.config/Claude/` on Linux). Use `--config-path` to override.
 
 **Validation output.** The command prints:
 

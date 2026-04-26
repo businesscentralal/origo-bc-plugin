@@ -353,10 +353,13 @@ the normalisation step.
 | Platform | Command | Output |
 |----------|---------|--------|
 | Windows | `.\Create-ConnectionString.ps1 -TenantId ... -ClientId ... -Environment ...` | `dpapi:<base64>` |
-| macOS / Linux | `node create-connection-string.js --tenant ... --client ... --environment ...` | Raw AES ciphertext (base64) |
+| macOS | `node create-connection-string.js --tenant ... --client ... --environment ...` | `keychain:<service>` (Keychain-bound) |
+| Linux | `node create-connection-string.js --tenant ... --client ... --environment ...` | `plain:<base64>` |
 
-Both scripts prompt for the client secret with hidden input and copy the
-result to the clipboard.
+Both scripts prompt for the client secret with hidden input. With
+`--nickname` / `-Nickname` the result is written directly into the
+Claude Desktop MCP config (no clipboard). Without it, the result is
+copied to the clipboard.
 
 ## Update rules
 
