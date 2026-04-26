@@ -21,7 +21,8 @@
  *     { tenantId, clientId, refreshToken, environment }.
  *
  * Security properties:
- *   At rest (config file): DPAPI + AES-256-GCM (double layer on Windows).
+ *   At rest (config file): DPAPI + AES-256-GCM (double layer on Windows),
+ *                           Keychain + AES-256-GCM (macOS).
  *   In transit to server:  TLS + AES-256-GCM.
  *   At server:             decrypted only in memory by resolveConn.
  *
@@ -34,7 +35,8 @@
  *     --environment 'UAT' \
  *     [--device-code] \
  *     [--mcp-url 'https://dynamics.is/api/mcp'] \
- *     [--no-dpapi]
+ *     [--no-dpapi] \
+ *     [--no-keychain]
  *
  * With --device-code the secret prompt is skipped; the user authenticates
  * interactively in a browser instead. Without --device-code the client
@@ -61,6 +63,7 @@ function parseArgs(argv) {
   const out = {
     environment:     "UAT",
     noDpapi:         false,
+    noKeychain:      false,
     deviceCode:      false,
     mcpUrl:          DEFAULT_MCP_URL,
     skipValidation:  false,
@@ -74,6 +77,7 @@ function parseArgs(argv) {
       case "--environment":      out.environment    = next(); break;
       case "--mcp-url":          out.mcpUrl         = next(); break;
       case "--no-dpapi":         out.noDpapi        = true;   break;
+      case "--no-keychain":      out.noKeychain     = true;   break;
       case "--device-code":      out.deviceCode     = true;   break;
       case "--skip-validation":  out.skipValidation = true;   break;
       case "--help":
@@ -81,7 +85,7 @@ function parseArgs(argv) {
         process.stderr.write(
           "Usage: node create-connection-string.js --tenant <id> --client <guid> " +
           "[--environment <name>] [--device-code] [--mcp-url <url>] [--no-dpapi] " +
-          "[--skip-validation]\n"
+          "[--no-keychain] [--skip-validation]\n"
         );
         process.exit(0);
       default:
@@ -168,6 +172,37 @@ function dpapiWrap(plainText) {
   }
   return "dpapi:" + res.stdout.trim();
 }
+
+// ── macOS Keychain store ─────────────────────────────────────────────────────
+// Stores the AES ciphertext in the login Keychain using the `security` CLI.
+// The service name encodes the tenant + environment so each connection gets
+// its own Keychain item. Returns the reference string "keychain:<service>".
+// Throws on failure so the caller can fall back to plain:.
+
+function keychainStore(ciphertext, tenant, environment) {
+  const service = `origo-bc-mcp/${tenant}/${environment}`;
+  const account = "mcp-encrypted-conn";
+
+  // -U = update if exists, -T "" = no app-specific ACL (any process of this
+  // user can read it after the Keychain is unlocked, which is the macOS
+  // default for login Keychain items).
+  const res = spawnSync("security", [
+    "add-generic-password",
+    "-a", account,
+    "-s", service,
+    "-w", ciphertext,
+    "-U",
+  ], { encoding: "utf8" });
+
+  if (res.status !== 0) {
+    const msg = (res.stderr || "").trim() || `security exited with ${res.status}`;
+    throw new Error(`Keychain store failed: ${msg}`);
+  }
+  return "keychain:" + service;
+}
+
+// ── macOS Keychain read (used by dynamics-is.js, exported here for reference)
+// security find-generic-password -a mcp-encrypted-conn -s <service> -w
 
 // ── OS clipboard copy (best-effort, never throws upstream) ──────────────────
 
@@ -481,28 +516,43 @@ async function deviceCodeFlow(tenantId, clientId) {
 
   let finalValue;
   let wrapped = false;
+  let wrapLabel = "plain:";
 
   if (process.platform === "win32" && !opts.noDpapi) {
+    // Windows: DPAPI binds the blob to this user + machine.
     try {
       finalValue = dpapiWrap(aesCiphertext);   // returns "dpapi:<base64>"
       wrapped = true;
+      wrapLabel = "dpapi:";
     } catch (e) {
       process.stderr.write(`[create-connection-string] ${e.message}\n`);
       process.stderr.write("[create-connection-string] Falling back to un-wrapped AES ciphertext.\n");
-      // dynamics-is.js rejects anything that doesn't start with "dpapi:" or
-      // "plain:" — so the non-DPAPI fallback MUST carry the plain: prefix
-      // rather than the bare AES ciphertext.
+      finalValue = "plain:" + aesCiphertext;
+    }
+  } else if (process.platform === "darwin" && !opts.noKeychain) {
+    // macOS: Keychain binds the blob to this user's login Keychain.
+    try {
+      finalValue = keychainStore(aesCiphertext, opts.tenant, opts.environment);
+      wrapped = true;
+      wrapLabel = "keychain:";
+      process.stderr.write(
+        "[create-connection-string] AES ciphertext stored in macOS Keychain " +
+        `(service: origo-bc-mcp/${opts.tenant}/${opts.environment}).\n`
+      );
+    } catch (e) {
+      process.stderr.write(`[create-connection-string] ${e.message}\n`);
+      process.stderr.write("[create-connection-string] Falling back to un-wrapped AES ciphertext.\n");
       finalValue = "plain:" + aesCiphertext;
     }
   } else {
-    // Non-Windows or --no-dpapi: same prefix requirement as above.
+    // Linux or explicit --no-dpapi / --no-keychain.
     finalValue = "plain:" + aesCiphertext;
   }
 
   const copied = copyToClipboard(finalValue);
   if (copied) {
     process.stderr.write(
-      `[create-connection-string] ${wrapped ? "dpapi:" : "plain:"}<...> value copied to clipboard.\n`
+      `[create-connection-string] ${wrapLabel}<...> value copied to clipboard.\n`
     );
   } else {
     process.stderr.write("[create-connection-string] Clipboard unavailable; printing value to stdout:\n");

@@ -135,14 +135,18 @@ function unwrapDpapi(value, label) {
 // paying for a DPAPI round-trip.
 
 // Connection string MUST use a recognized prefix so we know how to unwrap it.
-// "dpapi:<base64>" — Windows DPAPI-protected (Create-ConnectionString.ps1)
-// "plain:<base64>" — plaintext base64 (create-connection-string.js --no-dpapi)
+// "dpapi:<base64>"          — Windows DPAPI-protected (Create-ConnectionString.ps1)
+// "plain:<ciphertext>"      — bare AES ciphertext (create-connection-string.js --no-keychain on macOS, or Linux)
+// "keychain:<service>"      — macOS Keychain reference (create-connection-string.js on macOS)
 if (typeof ENCRYPTED_CONN_ARG !== 'string' ||
-    (!ENCRYPTED_CONN_ARG.startsWith('dpapi:') && !ENCRYPTED_CONN_ARG.startsWith('plain:'))) {
+    (!ENCRYPTED_CONN_ARG.startsWith('dpapi:') &&
+     !ENCRYPTED_CONN_ARG.startsWith('plain:') &&
+     !ENCRYPTED_CONN_ARG.startsWith('keychain:'))) {
   process.stderr.write(
-    '[stdio-proxy] <encryptedConn> must be either:\n' +
-    '  • "dpapi:<base64>" produced by Create-ConnectionString.ps1 (Windows), or\n' +
-    '  • "plain:<base64>" produced by create-connection-string.js --no-dpapi (macOS/Linux).\n'
+    '[stdio-proxy] <encryptedConn> must be one of:\n' +
+    '  \u2022 "dpapi:<base64>" produced by Create-ConnectionString.ps1 (Windows)\n' +
+    '  \u2022 "keychain:<service>" produced by create-connection-string.js (macOS)\n' +
+    '  \u2022 "plain:<ciphertext>" produced by create-connection-string.js --no-keychain (macOS/Linux)\n'
   );
   process.exit(1);
 }
@@ -164,13 +168,57 @@ if (!GUID_RE.test(COMPANY_ID)) {
   process.exit(1);
 }
 
-// ── DPAPI unwrap (shells out to PowerShell; Windows only) ────────────────────
-// Create-ConnectionString.ps1 DPAPI-wraps the server's ciphertext token
-// directly, so the decrypted value here is the bare token that belongs in
-// the x-encrypted-conn header. If it ever isn't (e.g. the PS1 script is
-// reverted to wrap the JSON envelope), regenerate the config value rather
-// than adding a fallback here.
-const ENCRYPTED_CONN = unwrapDpapi(ENCRYPTED_CONN_ARG, 'x-encrypted-conn').trim();
+// ── macOS Keychain read ─────────────────────────────────────────────────────────────────
+// Reads the AES ciphertext from the macOS login Keychain. The service name
+// was set by create-connection-string.js when it stored the blob.
+
+function readKeychain(service) {
+  if (process.platform !== 'darwin') {
+    process.stderr.write(
+      '[stdio-proxy] keychain:-prefixed value but this platform is not macOS.\n'
+    );
+    process.exit(1);
+  }
+
+  const account = 'mcp-encrypted-conn';
+  const res = spawnSync('security', [
+    'find-generic-password',
+    '-a', account,
+    '-s', service,
+    '-w',
+  ], { encoding: 'utf8' });
+
+  if (res.status !== 0) {
+    const msg = (res.stderr || '').trim() || `security exited with ${res.status}`;
+    process.stderr.write(
+      '[stdio-proxy] Keychain read failed for service "' + service + '": ' + msg + '\n' +
+      '[stdio-proxy] Re-run create-connection-string.js to regenerate the Keychain entry.\n'
+    );
+    process.exit(1);
+  }
+
+  const value = (res.stdout || '').trim();
+  if (!value) {
+    process.stderr.write(
+      '[stdio-proxy] Keychain returned empty value for service "' + service + '".\n'
+    );
+    process.exit(1);
+  }
+  return value;
+}
+
+// ── Unwrap the connection value ──────────────────────────────────────────────────────
+// Resolves the config-file token to the bare AES-256-GCM ciphertext that
+// belongs in the x-encrypted-conn HTTP header.
+//   dpapi:     → DPAPI decrypt (Windows)
+//   keychain:  → Keychain read (macOS)
+//   plain:     → strip prefix (any platform)
+const ENCRYPTED_CONN = (function unwrapConn(raw) {
+  if (raw.startsWith('dpapi:'))    return unwrapDpapi(raw, 'x-encrypted-conn');
+  if (raw.startsWith('keychain:')) return readKeychain(raw.slice('keychain:'.length));
+  if (raw.startsWith('plain:'))    return raw.slice('plain:'.length);
+  return raw;
+})(ENCRYPTED_CONN_ARG).trim();
 
 // HTTP headers cannot contain CR, LF, or NUL. A properly generated token
 // is already header-safe; this guard surfaces formatting surprises with a
