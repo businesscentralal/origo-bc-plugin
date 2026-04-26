@@ -46,12 +46,21 @@
  * Output: the final token is copied to the OS clipboard when possible,
  * otherwise printed to stdout. Informational messages go to stderr so
  * piping stdout into another tool still works.
+ *
+ * One-shot mode (--nickname <name>):
+ *   Skips the clipboard and writes a `bc-<name>` entry directly into the
+ *   Claude Desktop / Cowork MCP config. Config path is auto-detected per
+ *   platform (macOS / Windows MSIX / Windows classic) and can be overridden
+ *   with --config-path. Use --company-id to include a default company GUID.
  */
 
 "use strict";
 
 const https          = require("https");
 const readline       = require("readline");
+const fs             = require("fs");
+const path           = require("path");
+const os             = require("os");
 const { spawnSync }  = require("child_process");
 const { Writable }   = require("stream");
 
@@ -67,6 +76,10 @@ function parseArgs(argv) {
     deviceCode:      false,
     mcpUrl:          DEFAULT_MCP_URL,
     skipValidation:  false,
+    nickname:        null,
+    companyId:       null,
+    configPath:      null,
+    scriptsPath:     path.join(os.homedir(), "OrigoBC"),
   };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -80,12 +93,17 @@ function parseArgs(argv) {
       case "--no-keychain":      out.noKeychain     = true;   break;
       case "--device-code":      out.deviceCode     = true;   break;
       case "--skip-validation":  out.skipValidation = true;   break;
+      case "--nickname":         out.nickname       = next(); break;
+      case "--company-id":       out.companyId      = next(); break;
+      case "--config-path":      out.configPath     = next(); break;
+      case "--scripts-path":     out.scriptsPath    = next(); break;
       case "--help":
       case "-h":
         process.stderr.write(
           "Usage: node create-connection-string.js --tenant <id> --client <guid> " +
           "[--environment <name>] [--device-code] [--mcp-url <url>] [--no-dpapi] " +
-          "[--no-keychain] [--skip-validation]\n"
+          "[--no-keychain] [--skip-validation] [--nickname <name>] [--company-id <guid>] " +
+          "[--config-path <path>] [--scripts-path <path>]\n"
         );
         process.exit(0);
       default:
@@ -97,6 +115,31 @@ function parseArgs(argv) {
     process.stderr.write("Missing --tenant or --client. Use --help for usage.\n");
     process.exit(2);
   }
+
+  // Validate --nickname
+  if (out.nickname) {
+    // Strip leading 'bc-' so both 'kappi-holding' and 'bc-kappi-holding' work.
+    if (out.nickname.startsWith("bc-")) {
+      const orig = out.nickname;
+      out.nickname = out.nickname.slice(3);
+      process.stderr.write(
+        `[create-connection-string] Stripped leading 'bc-' from --nickname '${orig}' -> '${out.nickname}'.\n`);
+    }
+    if (!/^[a-z0-9-]+$/.test(out.nickname)) {
+      process.stderr.write("--nickname must be lowercase letters, digits, and hyphens only.\n");
+      process.exit(2);
+    }
+  }
+
+  // Validate --company-id
+  if (out.companyId) {
+    out.companyId = out.companyId.replace(/^\{(.*)\}$/, "$1");
+    if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(out.companyId)) {
+      process.stderr.write("--company-id must be a GUID in 8-4-4-4-12 hex format.\n");
+      process.exit(2);
+    }
+  }
+
   return out;
 }
 
@@ -438,6 +481,87 @@ async function deviceCodeFlow(tenantId, clientId) {
   throw new Error("Device code flow timed out. Please try again.");
 }
 
+// ── Claude Desktop MCP config ────────────────────────────────────────────────
+
+/**
+ * Resolve the Claude Desktop / Cowork MCP config file path.
+ * Priority: explicit --config-path → platform-specific auto-detection.
+ */
+function resolveConfigPath(explicit) {
+  if (explicit) return explicit;
+
+  switch (process.platform) {
+    case "win32": {
+      // MSIX install (Claude from Microsoft Store)
+      const msix = path.join(
+        process.env.LOCALAPPDATA || "",
+        "Packages", "Claude_pzs8sxrjxfjjc", "LocalCache", "Roaming",
+        "Claude", "claude_desktop_config.json"
+      );
+      if (fs.existsSync(msix)) return msix;
+      // Classic install
+      return path.join(
+        process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"),
+        "Claude", "claude_desktop_config.json"
+      );
+    }
+    case "darwin":
+      return path.join(
+        os.homedir(), "Library", "Application Support",
+        "Claude", "claude_desktop_config.json"
+      );
+    default:
+      // Linux / other
+      return path.join(
+        process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
+        "Claude", "claude_desktop_config.json"
+      );
+  }
+}
+
+/**
+ * Write a `bc-<nickname>` entry into the Claude Desktop MCP config.
+ * Creates the file and parent directory if they don't exist.
+ */
+function writeConfigEntry(configPath, entryKey, dynamicsPath, finalValue, companyId) {
+  // Ensure directory exists
+  const dir = path.dirname(configPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  // Read or create config
+  let cfg;
+  if (fs.existsSync(configPath)) {
+    const raw = fs.readFileSync(configPath, "utf8");
+    try {
+      cfg = JSON.parse(raw);
+    } catch {
+      throw new Error(
+        `Failed to parse ${configPath} as JSON. Fix the file manually or use --config-path to point elsewhere.`
+      );
+    }
+  } else {
+    cfg = {};
+  }
+
+  if (!cfg.mcpServers) cfg.mcpServers = {};
+
+  // Build the args array: [dynamicsPath, connectionBlob, companyId?]
+  const args = [dynamicsPath, finalValue];
+  if (companyId) args.push(companyId);
+
+  const entry = { command: "node", args };
+
+  const existed = entryKey in cfg.mcpServers;
+  cfg.mcpServers[entryKey] = entry;
+
+  // Write BOM-free UTF-8 (Claude's JSON parser chokes on BOM)
+  fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), "utf8");
+
+  return existed ? "replaced" : "added";
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 (async function main() {
@@ -549,14 +673,38 @@ async function deviceCodeFlow(tenantId, clientId) {
     finalValue = "plain:" + aesCiphertext;
   }
 
-  const copied = copyToClipboard(finalValue);
-  if (copied) {
+  // ── Output: nickname mode (config-write) vs clipboard mode ────────────────
+
+  if (opts.nickname) {
+    const entryKey = `bc-${opts.nickname}`;
+    const configPath = resolveConfigPath(opts.configPath);
+    const dynamicsPath = path.join(opts.scriptsPath, "dynamics-is.js");
+
     process.stderr.write(
-      `[create-connection-string] ${wrapLabel}<...> value copied to clipboard.\n`
-    );
+      `[create-connection-string] Writing ${entryKey} entry to ${configPath} ...\n`);
+
+    try {
+      const action = writeConfigEntry(configPath, entryKey, dynamicsPath, finalValue, opts.companyId);
+      process.stderr.write(
+        `[create-connection-string] ${action === "replaced" ? "Replaced existing" : "Added new"} ${entryKey} entry.\n`);
+    } catch (e) {
+      process.stderr.write(`[create-connection-string] ${e.message}\n`);
+      process.exit(1);
+    }
+
+    process.stderr.write(
+      `[create-connection-string] Done. Restart Cowork / Claude Desktop to activate ${entryKey}.\n`);
   } else {
-    process.stderr.write("[create-connection-string] Clipboard unavailable; printing value to stdout:\n");
-    process.stdout.write(finalValue + "\n");
+    // Clipboard / stdout mode
+    const copied = copyToClipboard(finalValue);
+    if (copied) {
+      process.stderr.write(
+        `[create-connection-string] ${wrapLabel}<...> value copied to clipboard.\n`
+      );
+    } else {
+      process.stderr.write("[create-connection-string] Clipboard unavailable; printing value to stdout:\n");
+      process.stdout.write(finalValue + "\n");
+    }
   }
 
   if (!wrapped) {
