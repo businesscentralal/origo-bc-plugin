@@ -81,7 +81,7 @@ without specifying a tier, write to user memory.
 |----------|------|--------|
 | Personal skills, prompts, notes, preferences | **User** | Private, no permission gate |
 | Shared team knowledge, company-wide rules, shared skills | **Company** | Visible to all users in the company |
-| Global templates (UBL XML), environment-wide config | **Environment** | Cross-company, not user/company scoped |
+| Global templates (UBL XML), environment-wide config | **Environment** (via dedicated tools) | Cross-company, accessed via `list_ubl_templates` / `render_ubl_template` |
 | Promoting a personal skill to team use | **User → Company** | Read from user, write to company |
 
 ### Cowork / Claude.ai scope
@@ -90,7 +90,8 @@ When running inside Cowork chat or Claude.ai (not VS Code / Claude Code):
 
 - Use **memory tools** (`list_*` / `get_*` / `set_*_memory`) for skills
   and prompts. Use `get_config` / `set_config` only for environment-tier
-  records (UBL Templates and legacy MCP-Skills/MCP-Prompts).
+  records (legacy MCP-Skills/MCP-Prompts). For UBL Templates, use the
+  dedicated `list_ubl_templates` and `render_ubl_template` tools.
 - **Never** call `check_standards_status`, `update_bc_standards`, or
   `setup_origo_bc_environment` — those tools are for VS Code's developer
   environment only.
@@ -435,15 +436,38 @@ use auto-generated GUIDs — no manual minting needed.
 
 Icelandic PEPPOL UBL XML templates live in Cloud Events Storage under
 `source = "UBL Templates"`. Whenever Claude is producing PEPPOL UBL XML
-(invoice, credit note, order, etc.), **fetch a template first**. Never
-write UBL XML from scratch; the templates enforce correct namespace
+(invoice, credit note, order, etc.), **use the dedicated MCP tools**.
+Never write UBL XML from scratch; the templates enforce correct namespace
 declarations, PEPPOL `CustomizationID` / `ProfileID`, and Iceland-specific
 defaults.
 
-```
-get_config(source: "UBL Templates", id: "DDDD0000-0000-0000-0000-000000000000")
-get_config(source: "UBL Templates", id: "<guid-from-index>")
-```
+### Tools
+
+| Tool | Purpose |
+|------|--------|
+| `list_ubl_templates` | Returns the template index — all available templates with their IDs and descriptions |
+| `render_ubl_template` | Fetches a template by ID and renders it with supplied placeholder values and optional embeddings |
+
+These tools use a centralized server-side connection (`SETUP_*` env vars)
+and do **not** require the caller to pass any connection parameters.
+
+### Workflow
+
+1. **Discover** — call `list_ubl_templates()` to see available templates.
+2. **Render** — call `render_ubl_template({ templateId, placeholders, embeddings })` where:
+   - `templateId` — GUID from the index
+   - `placeholders` — object mapping placeholder names to values (e.g. `{ "InvoiceNo": "INV-001", ... }`)
+   - `embeddings` — optional array of `{ id, description, mimeCode, filename, base64Content }` for attachments
+3. The tool handles placeholder substitution, removes empty optional blocks,
+   converts legacy `[BLOCK:...]...[/BLOCK:...]` syntax, and injects
+   `<cac:AdditionalDocumentReference>` elements for embeddings.
+
+### Do NOT use `get_config` for UBL
+
+The old pattern (`get_config(source: "UBL Templates", id: "...")` +
+manual placeholder replacement) is **deprecated**. Always use the
+dedicated tools which handle rendering server-side with proper XML
+escaping.
 
 Three standards are supported:
 
@@ -456,16 +480,8 @@ Three standards are supported:
 Identify the right standard from `CustomizationID` and `ProfileID` on the
 source document.
 
-Template use:
-
-1. Fetch the template for the document type.
-2. Replace every `{{placeholder|default}}` with the real value (use
-   `default` if nothing is available).
-3. Remove empty optional blocks (those whose placeholder had no default and
-   no data).
-4. Repeat line blocks (`InvoiceLine`, `CreditNoteLine`, etc.) once per line.
-5. Resolve customer data by field numbers 90 (GLN) and 47 (Registration No.)
-   to determine `EndpointID`.
+Resolve customer data by field numbers 90 (GLN) and 47 (Registration No.)
+to determine `EndpointID`.
 
 ### EndpointID resolution
 
