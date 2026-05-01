@@ -1,6 +1,6 @@
 {
   "name": "origo-bc",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Origo BC Dynamics 365 Business Central integration — guided setup of stdio-proxy connections to the dynamics.is MCP endpoint, with /origo-bc-setup, /origo-bc-add-env, /origo-bc-update-env, /origo-bc-list-environments and /origo-bc-switch-company.",
   "author": {
     "name": "Origo hf.",

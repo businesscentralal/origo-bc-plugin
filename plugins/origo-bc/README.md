@@ -40,7 +40,7 @@ directory.
 
 | Kind   | Name                                             | Purpose                                                                                      |
 | ------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| Skill  | `origo-bc-accounting`                        | Loads the Origo BC accounting & development rules whenever BC, MCP, or `get_config` is mentioned.      |
+| Skill  | `origo-bc-accounting`                        | Loads the Origo BC accounting & development rules whenever BC, MCP, or memory tools are mentioned.      |
 | Skill  | `origo-bc-cloud-events`                      | Loads the Cloud Events API authoring rules, message type catalog, and examples for MCP development. |
 | Skill  | `origo-bc-setup` (`/origo-bc-setup`)              | First-time connection wizard: copies scripts, collects credentials, writes the config entry. |
 | Skill  | `origo-bc-add-env` (`/origo-bc-add-env`)          | Adds an additional BC tenant / environment to an existing install.                           |

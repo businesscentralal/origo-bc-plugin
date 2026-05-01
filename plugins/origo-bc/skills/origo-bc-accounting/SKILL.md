@@ -3,13 +3,13 @@ name: origo-bc-accounting
 description: >
   This skill should be used when the user mentions Business Central, BC,
   Dynamics 365, Origo BC, the MCP server at dynamics.is, skills or prompts
-  stored in BC, memory tools, `get_config`, `set_config`, UBL templates, or
-  asks about the `/origo-bc-*` commands. Loads the Origo BC operating rules
-  that govern the three-tier storage model (user memory, company memory,
-  environment config), identity handling via who_am_i, and which connection
-  formats are accepted by the server.
+  stored in BC, memory tools, UBL templates, or asks about the
+  `/origo-bc-*` commands. Loads the Origo BC operating rules that govern
+  the two-tier storage model (user memory, company memory), identity
+  handling via who_am_i, and which connection formats are accepted by the
+  server.
 metadata:
-  version: "0.5.0"
+  version: "0.6.0"
   author: "Origo hf."
 ---
 
@@ -17,7 +17,7 @@ metadata:
 
 Follow these rules whenever the user is working with the Origo BC MCP
 endpoint (`https://dynamics.is/api/mcp`), skills, prompts, memory,
-UBL templates or the `/origo-bc-*` commands.
+UBL templates, or the `/origo-bc-*` commands.
 
 ## Session bootstrap — DO THIS IN ORDER WHEN THE SKILL LOADS
 
@@ -27,9 +27,12 @@ required preamble.
 
 1. **Caller identity on the default company** — call `who_am_i` with no
    `companyId` (so it resolves to the bc-* entry's default company).
-   Read the `user`, `personalization`, `salesperson`, `employee`,
-   `vendor`, `customer`, `contact`, and `companyInfo` fields so you
-   know who is asking and which legal entity they are sitting in.
+   Read the `user`, `personalization`, `userSetup`, `approvalSetup`,
+   `notificationSetup`, `resource`, `salesperson`, `employee`,
+   `manager`, `companyInfo`, `warehouseLocations`,
+   `responsibilityCenters`, `dueFromToOwner`, `customer`, `vendor`,
+   and `contact` fields so you know who is asking, what they can
+   approve, how they are notified, and which legal entity they sit in.
    (If the session later talks to a different company, repeat the call
    with that `companyId` — identity is per-company.)
 
@@ -58,16 +61,15 @@ If `who_am_i` fails (e.g. token problem surfaced by the server's
 proceeding without identity context. A half-loaded session is worse than
 a clean failure.
 
-## Three-tier storage model
+## Two-tier storage model
 
-Skills, prompts, notes, and configuration are stored across three tiers.
+Skills, prompts, notes, and configuration are stored across two tiers.
 Each tier has different visibility, permissions, and tools.
 
 | Tier | BC table | Visibility | Tools | Write permission |
-|------|----------|-----------|-------|-----------------|
+|------|----------|-----------|-------|------------------|
 | **User** (default) | Cloud Events User Memory (65320) | Private to calling user | `list_user_memory` / `get_user_memory` / `set_user_memory` | Always — own records only |
 | **Company** | Cloud Events Memory (65319) | All authenticated users in the company | `list_company_memory` / `get_company_memory` / `set_company_memory` | `canUpdateCompanyMemory = true` (from `who_am_i`) |
-| **Environment** | Cloud Events Storage (65308) | All companies, environment-wide | `get_config` / `set_config` with source string | `get_table_permissions({ table: "Cloud Events Storage" })` must show write access |
 
 ### Default tier: user memory
 
@@ -81,7 +83,6 @@ without specifying a tier, write to user memory.
 |----------|------|--------|
 | Personal skills, prompts, notes, preferences | **User** | Private, no permission gate |
 | Shared team knowledge, company-wide rules, shared skills | **Company** | Visible to all users in the company |
-| Global templates (UBL XML), environment-wide config | **Environment** (via dedicated tools) | Cross-company, accessed via `list_ubl_templates` / `render_ubl_template` |
 | Promoting a personal skill to team use | **User → Company** | Read from user, write to company |
 
 ### Cowork / Claude.ai scope
@@ -89,9 +90,8 @@ without specifying a tier, write to user memory.
 When running inside Cowork chat or Claude.ai (not VS Code / Claude Code):
 
 - Use **memory tools** (`list_*` / `get_*` / `set_*_memory`) for skills
-  and prompts. Use `get_config` / `set_config` only for environment-tier
-  records (legacy MCP-Skills/MCP-Prompts). For UBL Templates, use the
-  dedicated `list_ubl_templates` and `render_ubl_template` tools.
+  and prompts. For UBL Templates, use the dedicated `list_ubl_templates`
+  and `render_ubl_template` tools.
 - **Never** call `check_standards_status`, `update_bc_standards`, or
   `setup_origo_bc_environment` — those tools are for VS Code's developer
   environment only.
@@ -133,7 +133,7 @@ discovery mechanism. Use structured prefixes:
 |--------|---------|---------|
 | `skill:<name>` | Knowledge / reference material | `skill:exchange-rates` |
 | `prompt:<name>` | Workflow template / slash command | `prompt:post-journal` |
-| `note:<topic>` | Working notes, patterns, decisions | `note:kappi-portfolio` |
+| `note:<topic>` | Working notes, patterns, decisions | `note:dynamics-portfolio` |
 
 ### Record lifecycle
 
@@ -156,57 +156,6 @@ Description field:
 
 All three verbs (list, get, set) plus `skip` and `take` for pagination.
 
-## Environment tier — get_config / set_config
-
-The environment tier uses `get_config` and `set_config` with a `source`
-string. This tier is for global, cross-company content that predates
-the memory tools.
-
-| Source | Content | Index GUID |
-|--------|---------|-----------|
-| `MCP-Skills` | Legacy skills (JSON with patterns, rules, reference data) | `00000000-0000-0000-0000-000000000000` |
-| `MCP-Prompts` | Legacy prompts (markdown + frontmatter + variables) | `00000000-0000-0000-0000-000000000000` |
-| `UBL Templates` | PEPPOL UBL XML templates | `DDDD0000-0000-0000-0000-000000000000` |
-
-```
-get_config(source: "MCP-Skills", id: "00000000-0000-0000-0000-000000000000")   // skills index
-get_config(source: "MCP-Skills", id: "<guid>")                                 // specific skill
-set_config(source: "MCP-Skills", id: "<guid>", data: { ... })                  // update skill
-```
-
-### Two skill storage types (environment tier)
-
-| `type` | Where is the content? | How to load |
-|--------|----------------------|-------------|
-| `content` | Inline in the record's `data` field | Read `data` directly |
-| `remote-loader` | Metadata + `sourceUrl` only; body is on the web | Fetch `sourceUrl` via WebFetch and treat the response as source |
-
-For a `remote-loader` skill: fetch the record, then fetch `sourceUrl`,
-then use the downloaded content as the authoritative body.
-
-### Prompt record shape (environment tier)
-
-```json
-{
-  "name": "<prompt-name>",
-  "description": "<what it does>",
-  "frontmatter": { "mode": "agent", "tools": [] },
-  "variables": [ { "name": "foo", "type": "input", "description": "" } ],
-  "skillRefs": ["<skill-guid-1>", "<skill-guid-2>"],
-  "body": "<markdown with ${input:variable} placeholders>"
-}
-```
-
-When a user's request matches a prompt: fetch that prompt, fetch every
-referenced skill, then execute the `body`.
-
-### Migration note
-
-New skills and prompts should be created in **user memory** (personal)
-or **company memory** (shared) rather than the environment tier. The
-environment tier remains for UBL Templates and existing MCP-Skills /
-MCP-Prompts records that have not yet been migrated.
-
 ## MCP connection format — AES-256-GCM
 
 The server's `resolveConn` accepts **only** AES-256-GCM encrypted blobs.
@@ -223,20 +172,32 @@ roles, and context vary per company.
 
 The response describes who is calling from BC's perspective:
 
-- **User** — the authenticated BC user or app registration
-- **Resource** — the linked BC resource record (if any)
-- **Salesperson** — the linked salesperson/purchaser code
-- **Employee** — the linked employee record
-- **Language** — the user's configured language (LCID)
-- **Roles / permissions** — what the caller can access
-- **canUpdateCompanyMemory** — boolean; true when the caller can write
-  to company memory via `set_company_memory`
-- **System prompt** (optional) — environment-specific AI instructions
-  configured by the BC administrator
+| Section | Type | Contents |
+|---------|------|----------|
+| `user` | Object/null | userSecurityId, userName, fullName, contactEmail, authenticationEmail |
+| `personalization` | Object/null | profileId, languageId (LCID), localeId, company, timeZone |
+| `userSetup` | Object/null | userId, salesPurchCode, approverId, resp-centre filters, posting date range, email |
+| `approvalSetup` | Object/null | approverId, administrator flag, unlimited flags, sales/purchase/request amount limits, substitute |
+| `notificationSetup` | Array/null | notificationType, notificationMethod, recurrence, time, dailyFrequency |
+| `resource` | Object/null | no, name, type — linked via Time Sheet Owner or CE User Setup override |
+| `salesperson` | Object/null | code, name, email, phoneNo — linked via User Setup or CE User Setup override |
+| `employee` | Object/null | no, firstName, lastName, socialSecurityNo, email, phoneNo, jobTitle, managerNo, resourceNo |
+| `manager` | Object/null | no, firstName, lastName, email, phoneNo, jobTitle — the employee's manager |
+| `companyInfo` | Object/null | name, address, city, postCode, countryRegionCode, phoneNo, email, homePage, vatRegistrationNo, registrationNo |
+| `warehouseLocations` | Array/null | locationCode, default, adcsUser — Warehouse Employee assignments |
+| `responsibilityCenters` | Object/null | salesRespCtrFilter, purchaseRespCtrFilter, serviceRespCtrFilter |
+| `dueFromToOwner` | Object/null | glAccountNo, name, balanceAtDate, netChange — owner G/L account from CE User Setup |
+| `customer` | Object/null | no, name, address, city, postCode, phoneNo, email, creditLimitLCY, balanceLCY, balanceDueLCY |
+| `vendor` | Object/null | no, name, address, city, postCode, phoneNo, email, balanceLCY, balanceDueLCY |
+| `contact` | Object/null | no, name, address, city, postCode, phoneNo, email, type, companyNo, companyName |
+| `systemPrompt` | String/null | Per-user, per-company system prompt (UTF-8 text, may contain HTML entities) |
+| `canUpdateCompanyMemory` | Boolean | Whether the caller can write to company memory via `set_company_memory` |
+
+Any section returns `null` when the corresponding record does not exist.
 
 Use these details to personalise responses, resolve "my" references
-(e.g. "my customers" → salesperson filter), and respect language
-preferences.
+(e.g. "my customers" → salesperson filter), determine approval limits,
+understand notification preferences, and respect language preferences.
 
 ### Language handling
 
@@ -323,9 +284,11 @@ the normalisation step.
    b. Re-apply language code (may differ from previous company)
    c. Re-apply the new systemPrompt (may differ from the previous one)
    d. Note the new canUpdateCompanyMemory value
-4. Use identity (user, salesperson, vendor, customer, contact,
-   employee, language, companyInfo) to personalise queries, resolve
-   "my …" references, and filter data.
+4. Use identity (user, userSetup, approvalSetup, notificationSetup,
+   resource, salesperson, employee, manager, companyInfo,
+   warehouseLocations, responsibilityCenters, dueFromToOwner,
+   customer, vendor, contact, language) to personalise queries,
+   resolve "my …" references, and filter data.
 ```
 
 ### How the connection blob is produced
@@ -386,7 +349,6 @@ set_company_memory({ description: "note:<topic>", memory: "...markdown content..
 1. Choose the tier:
    - **User memory** (default) — personal skill or prompt
    - **Company memory** — shared with all users in the company
-   - **Environment** — global, cross-company (legacy — prefer memory tiers)
 2. Write the record with an appropriate description prefix:
    ```
    set_user_memory({ description: "skill:my-new-skill", memory: "...markdown..." })
@@ -405,41 +367,13 @@ To promote a personal skill to company-wide:
 
 Requires `canUpdateCompanyMemory = true`.
 
-### Environment-tier updates (legacy)
-
-For existing records in MCP-Skills, MCP-Prompts, or UBL Templates:
-```
-set_config(source: "MCP-Skills", id: "<guid>", data: { ...updated body... })
-```
-
-Requires write access to Cloud Events Storage (table 65308) — verify with
-`get_table_permissions({ table: "Cloud Events Storage" })`.
-
-### GUID conventions (environment tier only)
-
-Environment-tier records use structured GUID prefixes:
-
-| Prefix | Category |
-|--------|----------|
-| `A1xxxxxx-0000-0000-0000-xxxxxxxxxxxx` | `bc-general/*` skills (content) |
-| `A2xxxxxx-0000-0000-0000-xxxxxxxxxxxx` | `bc-journal-corrections/*` skills (content) |
-| `A3xxxxxx-0000-0000-0000-xxxxxxxxxxxx` | `bc-incoming-document/*` skills (content) |
-| `A4xxxxxx-0000-0000-0000-xxxxxxxxxxxx` | `bc-integration/*` skills (often remote-loader) |
-| `A9xxxxxx-0000-0000-0000-xxxxxxxxxxxx` | Top-level orchestration skills (content) |
-| `B9xxxxxx-0000-0000-0000-xxxxxxxxxxxx` | Top-level orchestration prompts |
-| `DDDD0000-0000-0000-0000-xxxxxxxxxxxx` | UBL Templates |
-
-GUIDs may contain only hex characters (0-9, A-F). Memory-tier records
-use auto-generated GUIDs — no manual minting needed.
-
 ## UBL XML templates
 
-Icelandic PEPPOL UBL XML templates live in Cloud Events Storage under
-`source = "UBL Templates"`. Whenever Claude is producing PEPPOL UBL XML
-(invoice, credit note, order, etc.), **use the dedicated MCP tools**.
-Never write UBL XML from scratch; the templates enforce correct namespace
-declarations, PEPPOL `CustomizationID` / `ProfileID`, and Iceland-specific
-defaults.
+Icelandic PEPPOL UBL XML templates are served via **dedicated MCP tools**.
+Whenever Claude is producing PEPPOL UBL XML (invoice, credit note, order,
+etc.), use these tools. Never write UBL XML from scratch; the templates
+enforce correct namespace declarations, PEPPOL `CustomizationID` /
+`ProfileID`, and Iceland-specific defaults.
 
 ### Tools
 
@@ -461,13 +395,6 @@ and do **not** require the caller to pass any connection parameters.
 3. The tool handles placeholder substitution, removes empty optional blocks,
    converts legacy `[BLOCK:...]...[/BLOCK:...]` syntax, and injects
    `<cac:AdditionalDocumentReference>` elements for embeddings.
-
-### Do NOT use `get_config` for UBL
-
-The old pattern (`get_config(source: "UBL Templates", id: "...")` +
-manual placeholder replacement) is **deprecated**. Always use the
-dedicated tools which handle rendering server-side with proper XML
-escaping.
 
 Three standards are supported:
 
@@ -494,15 +421,8 @@ to determine `EndpointID`.
 `0088` = GS1 GLN scheme. `0196` = Icelandic national registry (BIS 3.0).
 `9917` = kennitala EAS code (BIS 2.0). `IS:KT` = kennitala (BII1).
 
-## Local files
-
-Files under `C:\Data\MCP\prompts\*.prompt.md` are **mirrors** of BC
-records — VS Code / Claude Code reads them as slash commands. They are
-**not** the source of truth; if a mirror drifts from BC, rebuild it from
-the BC record.
-
 ### Single source of truth
 
-Skills and prompts in BC (user memory, company memory, or environment
-config) are the **one source of truth**. Local files only describe how
-to fetch them — they don't store the content.
+Skills and prompts in BC (user memory or company memory) are the **one
+source of truth**. Local files only describe how to fetch them — they
+don't store the content.
