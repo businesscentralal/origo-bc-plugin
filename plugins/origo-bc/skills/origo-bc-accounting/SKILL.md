@@ -9,7 +9,7 @@ description: >
   handling via who_am_i, and which connection formats are accepted by the
   server.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
   author: "Origo hf."
 ---
 
@@ -44,6 +44,8 @@ required preamble.
 
    **Permissions:** The response includes `canUpdateCompanyMemory`
    (boolean) — note this for write operations to company memory.
+   It also includes `canSendAndCancelApprovalRequests` (boolean) —
+   note this for `send_for_approval` and `cancel_approval` operations.
 
 2. **System prompt injection** — if the `who_am_i` response has a
    non-empty `systemPrompt` field, treat its text as **additional
@@ -195,6 +197,7 @@ The response describes who is calling from BC's perspective:
 | `unreadNotifications` | Array | Unread notification threads — each entry: `sender`, `subject`, `threadId`. Deduped by threadId (one entry per thread). Empty array if none |
 | `pendingApprovals` | Array | Open approval entries assigned to user — each entry: `documentType`, `documentNo`, `amountLCY`, `dueDate`. Empty array if none |
 | `canUpdateCompanyMemory` | Boolean | Whether the caller can write to company memory via `set_company_memory` |
+| `canSendAndCancelApprovalRequests` | Boolean | Whether the caller can use `send_for_approval` and `cancel_approval` (i.e. has write permission to the Cloud Events Approval Access table) |
 
 Any section returns `null` when the corresponding record does not exist.
 
@@ -351,7 +354,7 @@ Returns the same entry structure as `get_my_approvals`.
 ### send_for_approval
 
 Submits a record for approval. Optionally provides an explicit approver
-chain.
+chain. Requires `canSendAndCancelApprovalRequests = true`.
 
 | Parameter | Required | Type | Description |
 |-----------|----------|------|-------------|
@@ -391,6 +394,7 @@ Delegates an approval entry to another user.
 ### cancel_approval
 
 Cancels a pending approval request on a record.
+Requires `canSendAndCancelApprovalRequests = true`.
 
 | Parameter | Required | Type | Description |
 |-----------|----------|------|-------------|
@@ -485,6 +489,7 @@ If the WhoAmI response contains a `systemPrompt`:
 1. Skill load:
    a. who_am_i (default company, no args)    → caller identity + language
                                                 + canUpdateCompanyMemory
+                                                + canSendAndCancelApprovalRequests
    b. Apply language code as session default (all replies in that language)
    c. If systemPrompt present and non-empty: normalise + apply as
       per-session behavioural instructions
@@ -494,7 +499,7 @@ If the WhoAmI response contains a `systemPrompt`:
    a. who_am_i with the new companyId
    b. Re-apply language code (may differ from previous company)
    c. Re-apply the new systemPrompt (may differ from the previous one)
-   d. Note the new canUpdateCompanyMemory value
+   d. Note the new canUpdateCompanyMemory and canSendAndCancelApprovalRequests values
 4. Use identity (user, userSetup, approvalSetup, notificationSetup,
    resource, salesperson, employee, manager, companyInfo,
    warehouseLocations, responsibilityCenters, dueFromToOwner,
