@@ -9,7 +9,7 @@ description: >
   handling via who_am_i, and which connection formats are accepted by the
   server.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
   author: "Origo hf."
 ---
 
@@ -31,8 +31,9 @@ required preamble.
    `notificationSetup`, `resource`, `salesperson`, `employee`,
    `manager`, `companyInfo`, `warehouseLocations`,
    `responsibilityCenters`, `dueFromToOwner`, `customer`, `vendor`,
-   and `contact` fields so you know who is asking, what they can
-   approve, how they are notified, and which legal entity they sit in.
+   `contact`, `unreadNotifications`, and `pendingApprovals` fields so
+   you know who is asking, what they can approve, how they are notified,
+   what needs their attention, and which legal entity they sit in.
    (If the session later talks to a different company, repeat the call
    with that `companyId` — identity is per-company.)
 
@@ -191,6 +192,8 @@ The response describes who is calling from BC's perspective:
 | `vendor` | Object/null | no, name, address, city, postCode, phoneNo, email, balanceLCY, balanceDueLCY |
 | `contact` | Object/null | no, name, address, city, postCode, phoneNo, email, type, companyNo, companyName |
 | `systemPrompt` | String/null | Per-user, per-company system prompt (UTF-8 text, may contain HTML entities) |
+| `unreadNotifications` | Array | Unread notification threads — each entry: `sender`, `subject`, `threadId`. Deduped by threadId (one entry per thread). Empty array if none |
+| `pendingApprovals` | Array | Open approval entries assigned to user — each entry: `documentType`, `documentNo`, `amountLCY`, `dueDate`. Empty array if none |
 | `canUpdateCompanyMemory` | Boolean | Whether the caller can write to company memory via `set_company_memory` |
 
 Any section returns `null` when the corresponding record does not exist.
@@ -198,6 +201,241 @@ Any section returns `null` when the corresponding record does not exist.
 Use these details to personalise responses, resolve "my" references
 (e.g. "my customers" → salesperson filter), determine approval limits,
 understand notification preferences, and respect language preferences.
+
+## User Notification framework
+
+The MCP server exposes a notification system built on the BC "Cloud
+Events Note" table. It allows agents and integrations to send, retrieve,
+and manage per-user notifications with threading support.
+
+### Notification tools
+
+| Tool | Direction | Purpose |
+|------|-----------|---------|
+| `send_notification` | Inbound | Send a notification to a BC user |
+| `get_notifications` | Outbound | Retrieve notifications for the authenticated user |
+| `mark_notifications_read` | Inbound | Mark notifications as read or unread |
+| `get_notification_count` | Outbound | Get total / unread / read counts |
+| `get_notification_thread` | Outbound | Retrieve all notifications in a specific thread |
+
+### send_notification
+
+Creates a notification entry visible in the recipient's notification
+centre. Supports threading and linking to related records.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `recipientUserId` | Yes | String | BC User ID of the recipient (e.g. `ADMIN`) |
+| `subject` | Yes | String | Subject line of the notification |
+| `body` | No | String | Body text |
+| `threadId` | No | String (GUID) | Groups notifications into a conversation thread |
+| `parentEntryNo` | No | Integer | Entry No. of parent notification (for threaded replies) |
+| `relatedTableId` | No | Integer | Table ID of the related record (e.g. 38 for Purchase Header) |
+| `relatedRecordSystemId` | No | String (GUID) | SystemId of the related record |
+| `notificationType` | No | String | Enum: `New Record`, `Approval`, or `Overdue` |
+
+Returns the created notification entry with `entryNo`.
+
+### get_notifications
+
+Retrieves notifications for the authenticated user with optional
+pagination and filtering.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `skip` | No | Integer | Number of records to skip (default 0) |
+| `take` | No | Integer | Number of records to return (default 50) |
+| `tableView` | No | String | BC filter syntax for additional filtering |
+
+Response includes `result[]` with: `entryNo`, `threadId`,
+`parentEntryNo`, `recipientUserId`, `senderUserId`, `relatedTableId`,
+`relatedRecordSystemId`, `approvalEntryNo`, `subject`, `body`, `isRead`,
+`sourceEntrySystemId`, `systemId`, `systemCreatedAt`,
+`systemModifiedAt`, `notificationType`.
+
+### mark_notifications_read
+
+Marks one or more notifications as read or unread.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `entryNos` | Yes | String | Comma-separated entry numbers (e.g. `1,5,12`) |
+| `isRead` | No | Boolean | `true` = mark read (default), `false` = mark unread |
+
+### get_notification_count
+
+Lightweight call for badge/indicator display.
+
+Returns: `total`, `unread`, `read` counts for the authenticated user.
+
+### get_notification_thread
+
+Retrieves all notifications in a specific thread, ordered by creation
+time with pagination support.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `threadId` | Yes | String (GUID) | The thread ID to retrieve |
+| `skip` | No | Integer | Number of records to skip (default 0) |
+| `take` | No | Integer | Number of records to return (default 50) |
+
+### Notification workflow patterns
+
+**Check for unread notifications:**
+Use the `unreadNotifications` array from `who_am_i` for a quick summary
+of unread threads (deduped by threadId). For full details, call
+`get_notifications` or `get_notification_count`.
+
+**Threaded conversations:**
+1. Send a notification with a `threadId` (GUID) to start a thread.
+2. Reply in the same thread by passing the same `threadId` plus the
+   `parentEntryNo` of the message being replied to.
+3. Use `get_notification_thread` to retrieve the full conversation.
+
+**Acknowledging notifications:**
+After presenting notification content to the user, offer to mark them as
+read with `mark_notifications_read`.
+
+## Approval workflow
+
+The `pendingApprovals` array in `who_am_i` gives a quick summary of open
+approval entries assigned to the user (documentType, documentNo,
+amountLCY, dueDate). For full details and actions, use the approval
+tools below.
+
+### Approval tools
+
+| Tool | Direction | Purpose |
+|------|-----------|---------|
+| `get_my_approvals` | Outbound | Full details on approvals assigned to me |
+| `get_approval_entries` | Outbound | Approval history for a specific record |
+| `send_for_approval` | Inbound | Submit a record for approval |
+| `approve_entries` | Inbound | Approve one or more entries |
+| `reject_entries` | Inbound | Reject one or more entries |
+| `delegate_approval` | Inbound | Delegate an entry to another user |
+| `cancel_approval` | Inbound | Cancel a pending approval request |
+| `pending_approval_sales_document` | Inbound | Send a sales document for approval |
+| `pending_approval_purchase_document` | Inbound | Send a purchase document for approval |
+
+### get_my_approvals
+
+Retrieves approval entries assigned to the authenticated user with full
+detail — the expanded version of `pendingApprovals` from `who_am_i`.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `skip` | No | Integer | Records to skip (default 0) |
+| `take` | No | Integer | Records to return (default 50) |
+| `tableView` | No | String | BC filter syntax for additional filtering |
+
+Response fields per entry: `entryNo`, `sequenceNo`, `tableId`,
+`tableName`, `tableCaption`, `documentType`, `documentNo`,
+`recordSystemId`, `status`, `dueDate`, `amount`, `amountLCY`,
+`currencyCode`, `comments[]`, `approvalCode`, `lastModified`.
+Each entry also includes `linkedApprovalEntries[]` and
+`linkedPostedApprovalEntries[]` for the full approval chain.
+
+### get_approval_entries
+
+Retrieves the approval log for a specific record.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `tableName` | No | String | Table name (e.g. `Purchase Header`) |
+| `tableNumber` | No | Integer | Table ID (e.g. `38`) |
+| `recordSystemId` | Yes | String (GUID) | SystemId of the record |
+| `skip` | No | Integer | Records to skip (default 0) |
+| `take` | No | Integer | Records to return (default 50) |
+| `tableView` | No | String | BC filter syntax |
+
+Returns the same entry structure as `get_my_approvals`.
+
+### send_for_approval
+
+Submits a record for approval. Optionally provides an explicit approver
+chain.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `tableName` | No | String | Table name |
+| `tableId` | No | Integer | Table ID |
+| `tableNumber` | No | Integer | Table number (alias for tableId) |
+| `recordSystemId` | Yes | String (GUID) | SystemId of the record to submit |
+| `approvals` | No | Array | Explicit chain: `[{ approverUserId, sequenceNo, dueDate, lineNumbers }]` |
+
+When `approvals` is omitted, BC uses the configured approval workflow.
+
+### approve_entries / reject_entries
+
+Approve or reject one or more approval entries.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `entries` | No | Array | `[{ entryNo }]` or `[{ systemId }]` — batch mode |
+| `entryNo` | No | Integer | Single entry (alternative to array) |
+| `systemId` | No | String (GUID) | Single entry by SystemId |
+| `comment` | No | String | Comment attached to the decision |
+
+Provide either `entries[]` for batch or `entryNo`/`systemId` for single.
+
+### delegate_approval
+
+Delegates an approval entry to another user.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `entries` | No | Array | `[{ entryNo }]` or `[{ systemId }]` — batch mode |
+| `entryNo` | No | Integer | Single entry |
+| `systemId` | No | String (GUID) | Single entry by SystemId |
+| `delegateToUserId` | Yes | String | BC User ID to delegate to |
+| `comment` | No | String | Comment |
+
+### cancel_approval
+
+Cancels a pending approval request on a record.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `tableName` | No | String | Table name |
+| `tableId` | No | Integer | Table ID |
+| `tableNumber` | No | Integer | Table number |
+| `recordSystemId` | Yes | String (GUID) | SystemId of the record |
+
+### pending_approval_sales_document / pending_approval_purchase_document
+
+Convenience tools to send a sales or purchase document for approval by
+document number.
+
+**Sales parameters** (provide one):
+`orderNo`, `quoteNo`, `invoiceNo`, `creditMemoNo`, `blanketOrderNo`,
+`returnOrderNo`
+
+**Purchase parameters** (provide one):
+`orderNo`, `quoteNo`, `invoiceNo`, `creditMemoNo`, `blanketOrderNo`,
+`returnOrderNo`
+
+### Approval workflow patterns
+
+**Quick check → drill down:**
+Use `pendingApprovals` from `who_am_i` to see if approvals need
+attention. If entries exist, call `get_my_approvals` for full details
+including amounts, comments, and linked entries.
+
+**Approve/reject flow:**
+1. Present the approval details to the user (document type, number,
+   amount, due date, any comments from the sender).
+2. Ask the user for their decision.
+3. Call `approve_entries` or `reject_entries` with an optional comment.
+
+**Delegation:**
+When the user cannot act on an approval (e.g. out of office), use
+`delegate_approval` with the target `delegateToUserId`.
+
+**Submitting documents:**
+Use `pending_approval_sales_document` or
+`pending_approval_purchase_document` for quick document submission by
+number. For other record types, use `send_for_approval` with the
+record's SystemId.
 
 ### Language handling
 
@@ -249,25 +487,6 @@ If the WhoAmI response contains a `systemPrompt`:
   company switch.
 - If the field is `null`, empty, or whitespace-only, skip silently.
 
-**Normalise before use.** BC stores `systemPrompt` as a rich-text field,
-so the raw JSON value can contain HTML entities (`&nbsp;`, `&amp;`,
-`&lt;`, `&gt;`, `&quot;`) and occasionally tags (`<p>`, `<br>`, `<b>`,
-`<i>`). Before treating the text as instructions:
-
-1. Decode HTML entities (`&nbsp;` → space, `&amp;` → `&`, `&lt;` → `<`,
-   `&gt;` → `>`, `&quot;` → `"`, numeric entities like `&#39;` → `'`).
-2. Strip or normalise tags (`<br>` / `<br/>` → newline, `<p>` …
-   `</p>` → paragraph break, drop any remaining formatting tags).
-3. Collapse runs of whitespace so the result reads as prose, not HTML.
-
-Example: a record authored in the BC UI may arrive as
-`"Þú&nbsp;ert eigandi...<br>Þér þykir gott..."` and must become
-`Þú ert eigandi... \n Þér þykir gott...` before you act on it.
-
-Never echo the raw (un-decoded) value back at the user, and never show
-it as a quoted block containing `&nbsp;` — that is a sign you skipped
-the normalisation step.
-
 ### Recommended session flow
 
 ```
@@ -287,8 +506,9 @@ the normalisation step.
 4. Use identity (user, userSetup, approvalSetup, notificationSetup,
    resource, salesperson, employee, manager, companyInfo,
    warehouseLocations, responsibilityCenters, dueFromToOwner,
-   customer, vendor, contact, language) to personalise queries,
-   resolve "my …" references, and filter data.
+   customer, vendor, contact, unreadNotifications, pendingApprovals,
+   language) to personalise queries, resolve "my …" references, and
+   filter data.
 ```
 
 ### How the connection blob is produced
