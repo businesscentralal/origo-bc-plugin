@@ -314,8 +314,6 @@ tools below.
 | `reject_entries` | Inbound | Reject one or more entries |
 | `delegate_approval` | Inbound | Delegate an entry to another user |
 | `cancel_approval` | Inbound | Cancel a pending approval request |
-| `pending_approval_sales_document` | Inbound | Send a sales document for approval |
-| `pending_approval_purchase_document` | Inbound | Send a purchase document for approval |
 
 ### get_my_approvals
 
@@ -401,10 +399,6 @@ Cancels a pending approval request on a record.
 | `tableNumber` | No | Integer | Table number |
 | `recordSystemId` | Yes | String (GUID) | SystemId of the record |
 
-### pending_approval_sales_document / pending_approval_purchase_document
-
-Convenience tools to send a sales or purchase document for approval by
-document number.
 
 **Sales parameters** (provide one):
 `orderNo`, `quoteNo`, `invoiceNo`, `creditMemoNo`, `blanketOrderNo`,
@@ -432,9 +426,7 @@ When the user cannot act on an approval (e.g. out of office), use
 `delegate_approval` with the target `delegateToUserId`.
 
 **Submitting documents:**
-Use `pending_approval_sales_document` or
-`pending_approval_purchase_document` for quick document submission by
-number. For other record types, use `send_for_approval` with the
+Use `send_for_approval` with the
 record's SystemId.
 
 ### Language handling
