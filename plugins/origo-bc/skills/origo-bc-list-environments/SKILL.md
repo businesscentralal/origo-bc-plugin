@@ -7,7 +7,7 @@ description: >
   which BC tenants Cowork knows about, what `bc-*` MCP servers are
   registered, or wants to audit their Origo BC setup. Reads the Cowork /
   Claude Desktop MCP config file and shows a table of every `bc-*` entry
-  with its resolved default company (if any).
+  with its resolved default company.
 metadata:
   version: "0.3.0"
   author: "Origo hf."
@@ -27,7 +27,7 @@ Reads the Cowork MCP config and lists every `bc-*` entry.
    `bc-`.
 3. For each entry, extract:
    - The nickname (key after `bc-` prefix).
-   - The default company GUID, if present (third element of `args`).
+   - The default company GUID (third element of `args`).
    - Whether the blob is DPAPI-wrapped (`dpapi:` prefix) or raw AES
      ciphertext (no prefix — used on macOS/Linux).
 4. Render a table:

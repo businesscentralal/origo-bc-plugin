@@ -48,7 +48,7 @@ by the PowerShell / Node helper running in the user's own terminal.
      **private / incognito browser window** (useful when the default
      browser is already signed in as a different Entra account).
    - BC **environment** name (e.g. `Production`, `UAT`).
-   - Optional **default company ID** (GUID).
+   - **Default company ID** (GUID). Required.
 4. Presents **one** PowerShell command the user runs in their own
    terminal. `Create-ConnectionString.ps1` with `-Nickname` calls the
    server's `encrypt_data` endpoint to produce an AES-256-GCM blob,
@@ -73,9 +73,7 @@ by the PowerShell / Node helper running in the user's own terminal.
    }
    ```
 
-   If the user did not provide a default company GUID, the script omits
-   the third element of `args` — the proxy accepts a missing company
-   and the user can pick one later with `/origo-bc-switch-company`. On
+   On
    non-Windows platforms the `-Nickname` one-shot mode is unavailable
    (DPAPI is Windows-only); fall back to the clipboard-based two-step
    flow described at the bottom of this skill.
@@ -260,7 +258,7 @@ Use `AskUserQuestion` for each of these (one at a time):
   Default: No. Recommend Yes if the user's default browser is already
   signed in as the wrong Entra account.
 - Environment (e.g. `Production`, `UAT`). Default: `Production`.
-- Default company GUID. Optional — offer a "Skip" option.
+- Default company GUID. **Required** — do not offer a skip option.
 
 ### Step 4 — One-shot: generate the blob AND write the config (Windows)
 
@@ -315,11 +313,6 @@ cd $env:USERPROFILE\OrigoBC
   -Nickname    '<nickname>' `
   -CompanyId   '<default-company-guid>'
 ```
-
-If the user did **not** supply a default company GUID, omit the
-`-CompanyId` line — the script will leave the third element out of the
-entry's `args` array. The user can pick a company later with
-`/origo-bc-switch-company`.
 
 If `bc-<nickname>` already exists in the config, the script **replaces
 it wholesale** (last call wins). That is intentional: re-running this
@@ -380,7 +373,7 @@ node create-connection-string.js \
   --client      '<client>' \
   --environment '<env>' \
   --nickname    '<nickname>' \
-  --company-id  '<default-company-guid>'   # optional
+  --company-id  '<default-company-guid>'
   # add --device-code for device flow
 ```
 

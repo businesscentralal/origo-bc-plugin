@@ -80,7 +80,7 @@ Before doing anything:
    - Authentication method (client secret or device code).
    - Whether to launch the device-code URL in a private / incognito
      browser window (only relevant for device code).
-   - Optional default company GUID.
+   - Default company GUID. **Required**.
 3. Present **one** PowerShell command that generates the AES+DPAPI blob,
    **validates it against the server's `list_companies` tool end-to-end**,
    **and** writes the new `bc-<nickname>` entry into the Claude Desktop
@@ -172,7 +172,7 @@ client, **authentication method** (Client secret or Device code),
 environment, and — if Device code — whether to use a **private /
 incognito browser window** for sign-in (useful when you want to
 authenticate as a different Entra account than the one already signed in
-to the default browser). Finally, optional default company GUID.
+to the default browser). Finally, the default company GUID (**required**).
 
 See `/origo-bc-setup` Step 3 for the explanation of each auth method.
 
@@ -259,10 +259,6 @@ cd $env:USERPROFILE\OrigoBC
   -CompanyId   '<default-company-guid>'
 ```
 
-If the user did not supply a default company GUID, omit the
-`-CompanyId` line entirely — the script leaves the third element out of
-the `args` array.
-
 **macOS / Linux** — the JS helper also supports `--nickname`
 one-shot mode. On macOS the blob is Keychain-bound (`keychain:`);
 on Linux it falls back to `plain:`. Example:
@@ -274,7 +270,7 @@ node create-connection-string.js \
   --client      '<client>' \
   --environment '<env>' \
   --nickname    '<nickname>' \
-  --company-id  '<default-company-guid>'   # optional
+  --company-id  '<default-company-guid>'
   # add --device-code for device flow
 ```
 

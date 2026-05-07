@@ -58,7 +58,7 @@ Claude chat.
    end-to-end validation check**, DPAPI-wraps it, and replaces the
    `bc-<nickname>` entry in the config. The company GUID on the
    existing entry is preserved by passing `-CompanyId` with the
-   existing third-element value (if present). The config is **never**
+   existing third-element value. The config is **never**
    written if validation fails.
 6. Prompt the user to restart Cowork and verify.
 
@@ -212,9 +212,9 @@ entry manually — the script only knows how to replace, not merge.
 4. Auto-detect the MSIX vs classic Claude config path.
 5. Replace the `bc-<nickname>` entry wholesale (BOM-free).
 
-Always pass `-CompanyId <existing-guid>` when the existing entry had an
-`args[2]`, so the replacement preserves the default company. Omit it
-otherwise.
+Always pass `-CompanyId <existing-guid>` to preserve the default
+company. If the existing entry somehow lacks a company GUID, ask the
+user to provide one — it is now required.
 
 **Client secret flow** (the script prompts for the secret with hidden
 input):
@@ -226,7 +226,7 @@ cd $env:USERPROFILE\OrigoBC
   -ClientId    '<client>' `
   -Environment '<env>' `
   -Nickname    '<existing-nickname>' `
-  -CompanyId   '<existing-company-guid-if-any>'
+  -CompanyId   '<existing-company-guid>'
 ```
 
 **Device-code flow** (opens a browser for interactive sign-in):
@@ -239,7 +239,7 @@ cd $env:USERPROFILE\OrigoBC
   -DeviceCode `
   -Environment '<env>' `
   -Nickname    '<existing-nickname>' `
-  -CompanyId   '<existing-company-guid-if-any>'
+  -CompanyId   '<existing-company-guid>'
 ```
 
 Add `-InPrivate` for an incognito browser window on device-code flow if
@@ -299,7 +299,7 @@ node create-connection-string.js \
   --client      '<client>' \
   --environment '<env>' \
   --nickname    '<nickname>' \
-  --company-id  '<default-company-guid>'   # optional
+  --company-id  '<default-company-guid>'
   # add --device-code for device flow
 ```
 
