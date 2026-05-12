@@ -361,6 +361,45 @@ if ($DeviceCode) {
     $secretPlain = $null   # drop our plaintext copy of the secret
 }
 
+# ── 1b. Initialize MCP session ────────────────────────────────────────────────
+# The server requires an Mcp-Session-Id header on all tools/call requests.
+# Obtain it by sending an initialize handshake first.
+
+$initBody = @{
+    jsonrpc = '2.0'
+    id      = 0
+    method  = 'initialize'
+    params  = @{
+        protocolVersion = '2025-03-26'
+        capabilities    = @{}
+        clientInfo      = @{ name = 'Create-ConnectionString'; version = '1.0' }
+    }
+} | ConvertTo-Json -Depth 10 -Compress
+
+Write-Host "[$ScriptName] Initializing MCP session at $McpUrl ..." -ForegroundColor Cyan
+
+try {
+    $initResponse = Invoke-WebRequest -Uri $McpUrl -Method POST `
+        -ContentType 'application/json' -Body $initBody -UseBasicParsing
+} catch {
+    throw "[$ScriptName] Failed to initialize MCP session at $McpUrl : $_"
+}
+
+$McpSessionId = $initResponse.Headers['Mcp-Session-Id']
+if (-not $McpSessionId) {
+    # Fallback: some servers return the session ID in the JSON body
+    $initJson = $initResponse.Content | ConvertFrom-Json
+    if ($initJson.error) {
+        throw "[$ScriptName] MCP initialize error: $($initJson.error.message)"
+    }
+    $McpSessionId = $initJson.result._meta.sessionId
+}
+if (-not $McpSessionId) {
+    throw "[$ScriptName] MCP server did not return a session ID."
+}
+
+Write-Host "[$ScriptName] MCP session established." -ForegroundColor Green
+
 # ── 2. Call the MCP server's encrypt_data tool ────────────────────────────────
 # No authentication headers are needed — encrypt_data is an open tool.
 # It encrypts the payload with AES-256-GCM using the server's MCP_ENCRYPTION_KEY.
@@ -381,7 +420,9 @@ Write-Host "[$ScriptName] Calling encrypt_data at $McpUrl ..." -ForegroundColor 
 
 try {
     $response = Invoke-WebRequest -Uri $McpUrl -Method POST `
-        -ContentType 'application/json' -Body $rpcBody -UseBasicParsing
+        -ContentType 'application/json' `
+        -Headers @{ 'Mcp-Session-Id' = $McpSessionId } `
+        -Body $rpcBody -UseBasicParsing
 } catch {
     throw "[$ScriptName] Failed to reach MCP server at $McpUrl : $_"
 }
@@ -430,7 +471,7 @@ if (-not $SkipValidation) {
 
     try {
         $vResp = Invoke-WebRequest -Uri $McpUrl -Method POST `
-            -Headers @{ 'Accept' = 'application/json, text/event-stream' } `
+            -Headers @{ 'Accept' = 'application/json, text/event-stream'; 'Mcp-Session-Id' = $McpSessionId } `
             -ContentType 'application/json' `
             -Body $validateBody -UseBasicParsing
     } catch {

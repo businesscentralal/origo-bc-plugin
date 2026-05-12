@@ -267,6 +267,55 @@ function copyToClipboard(text) {
   }
 }
 
+// ── Initialize MCP session ──────────────────────────────────────────────────
+// The server requires an Mcp-Session-Id header on all tools/call requests.
+// Obtain it by sending an initialize handshake first.
+
+function initializeSession(mcpUrl) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id:      0,
+      method:  "initialize",
+      params: {
+        protocolVersion: "2025-03-26",
+        capabilities:    {},
+        clientInfo:      { name: "create-connection-string", version: "1.0" },
+      },
+    });
+
+    const url = new URL(mcpUrl);
+    const options = {
+      hostname: url.hostname,
+      port:     url.port || 443,
+      path:     url.pathname,
+      method:   "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+    };
+
+    const req = https.request(options, (res) => {
+      const sessionId = res.headers["mcp-session-id"];
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        // Prefer the header; fall back to body if the server puts it there.
+        if (sessionId) return resolve(sessionId);
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+          if (json.error) return reject(new Error(`MCP initialize error: ${json.error.message}`));
+          const bodyId = json.result && json.result._meta && json.result._meta.sessionId;
+          if (bodyId) return resolve(bodyId);
+        } catch { /* ignore parse errors */ }
+        reject(new Error("MCP server did not return a session ID."));
+      });
+    });
+
+    req.on("error", (e) => reject(new Error(`MCP initialize request failed: ${e.message}`)));
+    req.write(body);
+    req.end();
+  });
+}
+
 // ── Validate the encrypted blob end-to-end via list_companies ───────────────
 // Round-trips the fresh AES ciphertext through the server's list_companies
 // tool. Fails the script (throws) if the server can't use these credentials
@@ -276,7 +325,7 @@ function copyToClipboard(text) {
 // server-side routing bugs (e.g. client-credentials used when the payload
 // only contains a refreshToken).
 
-function validateEncryptedBlob(mcpUrl, aesCiphertext) {
+function validateEncryptedBlob(mcpUrl, aesCiphertext, sessionId) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       jsonrpc: "2.0",
@@ -297,6 +346,7 @@ function validateEncryptedBlob(mcpUrl, aesCiphertext) {
       headers: {
         "Content-Type":   "application/json",
         "Accept":         "application/json, text/event-stream",
+        "Mcp-Session-Id": sessionId,
         "Content-Length": Buffer.byteLength(body),
       },
     };
@@ -354,7 +404,7 @@ function validateEncryptedBlob(mcpUrl, aesCiphertext) {
 // No authentication headers are needed — encrypt_data is an open tool.
 // It encrypts the payload with AES-256-GCM using the server's MCP_ENCRYPTION_KEY.
 
-function encryptViaServer(mcpUrl, plaintext) {
+function encryptViaServer(mcpUrl, plaintext, sessionId) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       jsonrpc: "2.0",
@@ -369,7 +419,7 @@ function encryptViaServer(mcpUrl, plaintext) {
       port:     url.port || 443,
       path:     url.pathname,
       method:   "POST",
-      headers:  { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      headers:  { "Content-Type": "application/json", "Mcp-Session-Id": sessionId, "Content-Length": Buffer.byteLength(body) },
     };
 
     const req = https.request(options, (res) => {
@@ -603,12 +653,24 @@ function writeConfigEntry(configPath, entryKey, dynamicsPath, finalValue, compan
     secret = null;
   }
 
+  // Initialize MCP session (required for all tools/call requests)
+  process.stderr.write(`[create-connection-string] Initializing MCP session at ${opts.mcpUrl} ...\n`);
+
+  let sessionId;
+  try {
+    sessionId = await initializeSession(opts.mcpUrl);
+  } catch (e) {
+    process.stderr.write(`[create-connection-string] ${e.message}\n`);
+    process.exit(1);
+  }
+  process.stderr.write("[create-connection-string] MCP session established.\n");
+
   // Call the server to encrypt the credentials with AES-256-GCM
   process.stderr.write(`[create-connection-string] Calling encrypt_data at ${opts.mcpUrl} ...\n`);
 
   let aesCiphertext;
   try {
-    aesCiphertext = await encryptViaServer(opts.mcpUrl, payload);
+    aesCiphertext = await encryptViaServer(opts.mcpUrl, payload, sessionId);
   } catch (e) {
     process.stderr.write(`[create-connection-string] ${e.message}\n`);
     process.exit(1);
@@ -623,7 +685,7 @@ function writeConfigEntry(configPath, entryKey, dynamicsPath, finalValue, compan
     process.stderr.write(
       `[create-connection-string] Validating credentials via list_companies ...\n`);
     try {
-      const count = await validateEncryptedBlob(opts.mcpUrl, aesCiphertext);
+      const count = await validateEncryptedBlob(opts.mcpUrl, aesCiphertext, sessionId);
       const suffix = count != null
         ? ` (${count} ${count === 1 ? "company" : "companies"} visible)`
         : "";
