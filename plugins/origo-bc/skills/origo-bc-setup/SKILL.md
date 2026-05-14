@@ -174,9 +174,20 @@ reply to the user with something like:
 > the BC connection through `node dynamics-is.js ...`. I couldn't find a
 > working Node on PATH (got: `<version or error>`).
 >
-> Install Node (LTS is fine) from <https://nodejs.org/>, open a **new**
-> Cowork session so the PATH refresh is picked up, and re-run
-> `/origo-bc-setup`.
+> **Quickest install (Windows 10/11)** — run this in PowerShell:
+>
+> ```powershell
+> winget install OpenJS.NodeJS.LTS
+> ```
+>
+> If `winget` is not available, download the installer directly:
+>
+> ```powershell
+> Start-Process "https://nodejs.org/dist/v22.16.0/node-v22.16.0-x64.msi"
+> ```
+>
+> After installing, **close and reopen** Cowork / your terminal so the
+> PATH refresh is picked up, then re-run `/origo-bc-setup`.
 >
 > Quick check in a new terminal window: `node --version`
 
@@ -276,8 +287,7 @@ No clipboard, no second block to paste.
 input):
 
 ```powershell
-cd $env:USERPROFILE\OrigoBC
-.\Create-ConnectionString.ps1 `
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\OrigoBC\Create-ConnectionString.ps1" `
   -TenantId    '<tenant>' `
   -ClientId    '<client>' `
   -Environment '<env>' `
@@ -288,8 +298,7 @@ cd $env:USERPROFILE\OrigoBC
 **Device-code flow** (opens a browser for interactive sign-in):
 
 ```powershell
-cd $env:USERPROFILE\OrigoBC
-.\Create-ConnectionString.ps1 `
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\OrigoBC\Create-ConnectionString.ps1" `
   -TenantId    '<tenant>' `
   -ClientId    '<client>' `
   -DeviceCode `
@@ -304,8 +313,7 @@ If the user chose a **private / incognito** browser window, add
 back to the default browser if none of them is on PATH:
 
 ```powershell
-cd $env:USERPROFILE\OrigoBC
-.\Create-ConnectionString.ps1 `
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\OrigoBC\Create-ConnectionString.ps1" `
   -TenantId    '<tenant>' `
   -ClientId    '<client>' `
   -DeviceCode -InPrivate `
@@ -359,6 +367,46 @@ Expect messages like:
   unavailable and you have reason to believe the credentials are
   correct).
 
+### Step 4b — Windows fallback: Node.js helper (execution policy blocked)
+
+If the user gets an error like
+`... cannot be loaded because running scripts is disabled on this system`
+or `File ... is not digitally signed`, their machine's PowerShell
+execution policy blocks `.ps1` scripts. The `powershell -ExecutionPolicy Bypass`
+wrapper in Step 4 normally handles this, but some corporate GPOs override
+even process-scoped policy.
+
+In that case, **use the Node.js helper instead** — Node.js is already a
+prerequisite (verified in Step 1) and `create-connection-string.js`
+supports DPAPI wrapping and `--nickname` one-shot mode on Windows too:
+
+**Client secret flow:**
+
+```powershell
+node "$env:USERPROFILE\OrigoBC\create-connection-string.js" `
+  --tenant      '<tenant>' `
+  --client      '<client>' `
+  --environment '<env>' `
+  --nickname    '<nickname>' `
+  --company-id  '<default-company-guid>'
+```
+
+**Device-code flow:**
+
+```powershell
+node "$env:USERPROFILE\OrigoBC\create-connection-string.js" `
+  --tenant      '<tenant>' `
+  --client      '<client>' `
+  --device-code `
+  --environment '<env>' `
+  --nickname    '<nickname>' `
+  --company-id  '<default-company-guid>'
+```
+
+This produces identical output to the PowerShell script (DPAPI-wrapped
+AES-256-GCM blob, auto-detected config path, end-to-end validation).
+The only difference is the runtime — `node` instead of `powershell`.
+
 ### Step 5 — macOS / Linux (one-shot via JS helper)
 
 The cross-platform Node helper supports `--nickname` one-shot mode
@@ -390,3 +438,29 @@ Tell the user to **restart Cowork / Claude Desktop** and verify with:
 ```
 mcp__bc-<nickname>__list_companies
 ```
+
+---
+
+## Troubleshooting
+
+### PowerShell execution policy blocks running .ps1 scripts
+
+**Symptom:** Error containing `cannot be loaded because running scripts
+is disabled on this system` or `is not digitally signed. You cannot run
+this script on the current system`.
+
+**Cause:** The machine's PowerShell execution policy is `Restricted` or
+`AllSigned` (common default on corporate Windows).
+
+**Fix (in order of preference):**
+
+1. The Step 4 commands already use `powershell -ExecutionPolicy Bypass
+   -File ...`, which overrides the policy for that single process
+   without admin rights. If the user copied an older command without this
+   wrapper, give them the updated command from Step 4.
+2. If a Group Policy enforces the restriction (the `-ExecutionPolicy`
+   flag has no effect), use the **Node.js fallback** in Step 4b — it
+   produces identical results and requires no PowerShell at all.
+3. As a last resort, the user's IT admin can set the execution policy
+   for the current user: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+   This persists and requires no admin elevation.
