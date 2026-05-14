@@ -5,7 +5,7 @@ description: >
   the MCP server at dynamics.is, skills/prompts stored in BC, memory tools,
   default skills/notes/prompts, UBL templates, or `/origo-bc-*` commands.
 metadata:
-  version: "1.0.1"
+  version: "1.0.2"
   author: "Origo hf."
 references:
   - url: https://github.com/businesscentralal/origo-bc-plugin/blob/main/plugins/origo-bc/skills/origo-bc-accounting/references/TOOLS.md
