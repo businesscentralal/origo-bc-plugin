@@ -51,6 +51,7 @@ Skip silently if null/empty.
 | **User** (default) | `list/get/set_user_memory` | Private | Always | Personal skills, notes, prompts |
 | **Company** | `list/get/set_company_memory` | All company users | `canUpdateCompanyMemory = true` | Shared team knowledge |
 | **Default** | `list/get_default_memory` | All environments | Read-only | Centrally managed defaults (skills, notes, prompts) |
+| **Environment config** | `get_config` / `set_config` | All companies in environment | Always | Structured JSON config, environment-wide despite `companyId` param |
 
 **Default = user memory.** "Save this" / "remember" without qualifier → user tier.
 
@@ -173,3 +174,13 @@ AES-256-GCM only. `plain:<base64>` is rejected (migration error).
 
 Skills and prompts live in the BC database (user/company memory).
 Local files describe how to fetch them — they don't store the content.
+
+---
+
+## 11. Environment config — get_config / set_config
+
+`get_config` / `set_config` reads and writes from the **Cloud Events Storage** table using `source` + `id` as primary key. Data is a JSON object (upsert semantics). Although the tools accept a `companyId` parameter, the storage table is **environment-wide** — shared across all companies in the tenant.
+
+Use for structured, environment-wide configuration (not free-text memory).
+
+**Note:** The `id` field in `set_config`/`get_config` is always a GUID.
