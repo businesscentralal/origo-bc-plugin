@@ -2,8 +2,8 @@
 {
   "name": "Innhólfið mitt",
   "schemaVersion": 1,
-  "description": "Innhólf fyrir Gunnar Þór — sýnir samþykktarbeiðnir og skilaboð úr Origo Demo BC. Tvöföld tenging samþykktar/tilkynningar (approvalEntryNo + relatedRecordSystemId). Flipar: Opin/Allar á samþykktum; Ólesin/Allar á skilaboðum.",
-  "mcpTools": [
+  "description": "Innhólf — sýnir samþykktarbeiðnir og skilaboð úr Business Central. Stilltu BC_SERVER neðst í skriptunni. Flipar: Opin/Allar á samþykktum; Ólesin/Allar á skilaboðum.",
+    "mcpTools": [
     "mcp__bc-origo-demo__get_my_approvals",
     "mcp__bc-origo-demo__get_notifications",
     "mcp__bc-origo-demo__get_document_lines",
@@ -15,9 +15,23 @@
     "mcp__bc-origo-demo__get_notification_thread",
     "mcp__bc-origo-demo__mark_notifications_read",
     "mcp__bc-origo-demo__create_email_draft",
-    "mcp__bc-origo-demo__get_page_url"
+    "mcp__bc-origo-demo__get_page_url",
+    "mcp__bc-origo-demo__who_am_i",
+    "mcp__bc-cloud-events-setup__get_my_approvals",
+    "mcp__bc-cloud-events-setup__get_notifications",
+    "mcp__bc-cloud-events-setup__get_document_lines",
+    "mcp__bc-cloud-events-setup__get_records",
+    "mcp__bc-cloud-events-setup__approve_entries",
+    "mcp__bc-cloud-events-setup__reject_entries",
+    "mcp__bc-cloud-events-setup__delegate_approval",
+    "mcp__bc-cloud-events-setup__send_notification",
+    "mcp__bc-cloud-events-setup__get_notification_thread",
+    "mcp__bc-cloud-events-setup__mark_notifications_read",
+    "mcp__bc-cloud-events-setup__create_email_draft",
+    "mcp__bc-cloud-events-setup__get_page_url",
+    "mcp__bc-cloud-events-setup__who_am_i"
   ],
-  "mcpServerNames": [
+    "mcpServerNames": [
     "bc-origo-demo",
     "bc-origo-demo",
     "bc-origo-demo",
@@ -29,15 +43,30 @@
     "bc-origo-demo",
     "bc-origo-demo",
     "bc-origo-demo",
-    "bc-origo-demo"
-  ]
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup",
+    "bc-cloud-events-setup"
+  ],
+  "_configNote": "Uppfærðu öll 'bc-origo-demo' hér að ofan í þitt BC server-nafn. Breyttu líka DEFAULT_BC_SERVER í skriptunni."
 }
 </script>
 <html lang="is">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Innhólf — Origo Demo</title>
+<title>Innhólf mitt</title>
 <style>
 :root { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -204,6 +233,26 @@ header h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; display: flex; al
 .resolved-note { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px; margin: 8px 20px; }
 .resolved-approved { background: #dcfce7; color: #166534; }
 .resolved-rejected { background: #fde8e8; color: #b91c1c; }
+.btn-settings { background: none; border: 1px solid #e5e9f0; border-radius: 7px; padding: 5px 8px; font-size: 14px; cursor: pointer; transition: background 0.12s; line-height: 1; }
+.btn-settings:hover { background: #f0f2f5; }
+/* ── Settings modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 300; display: none; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 24px; width: min(400px,90vw); box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+.modal h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+.modal label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; margin-top: 14px; }
+.modal label:first-of-type { margin-top: 0; }
+.modal input, .modal select { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit; color: #1a1a2e; background: #fff; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+.modal input:focus, .modal select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.server-loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280; padding: 10px 0; }
+.server-option-company { font-size: 12px; color: #9ca3af; }
+.server-error { font-size: 13px; color: #b91c1c; padding: 8px 0; }
+.modal-hint { font-size: 11px; color: #9ca3af; margin-top: 4px; line-height: 1.45; }
+.modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.btn-modal-save { background: #1d4ed8; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-modal-save:hover { background: #1e40af; }
+.btn-modal-cancel { background: none; border: 1px solid #e5e9f0; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; color: #6b7280; }
+.btn-modal-cancel:hover { background: #f0f2f5; }
 /* ── Comments ── */
 .comment-item { padding: 9px 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #e5e9f0; }
 .comment-item:last-child { margin-bottom: 0; }
@@ -227,9 +276,10 @@ header h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; display: flex; al
 </head>
 <body>
 <header>
-  <h1>📥 Innhólf mitt <span class="company-tag">— Origo Demo</span></h1>
+  <h1>📥 Innhólf mitt <span class="company-tag" id="companyTag"></span></h1>
   <div class="header-right">
     <span class="last-updated" id="lastUpdated">Hleður…</span>
+    <button class="btn-settings" id="btnSettings" onclick="openSettings()" title="Stillingar">⚙️</button>
     <button class="btn-reload" id="btnReload" onclick="reload()">↺ Uppfæra</button>
   </div>
 </header>
@@ -271,7 +321,96 @@ header h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; display: flex; al
   </div>
   <div class="drawer-body" id="drawerBody"></div>
 </div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>⚙️ Veldu BC umhverfi</h2>
+    <label for="selectBcServer">Business Central tenging</label>
+    <div id="serverPickerWrap">
+      <div class="server-loading"><span class="spinner-sm"></span> Leita að umhverfum…</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeSettings()">Hætta við</button>
+      <button class="btn-modal-save" id="btnSaveSettings" onclick="saveSettings()" disabled>Vista og endurhlaða</button>
+    </div>
+  </div>
+</div>
 <script>
+// ── BC tengistillingar ────────────────────────────────────────────────────
+// Breyttu þessu í þitt BC server-nafn, eða notaðu stillingagluggann (⚙️)
+const DEFAULT_BC_SERVER = 'bc-origo-demo';
+let BC_SERVER = localStorage.getItem('bc_inbox_server') || DEFAULT_BC_SERVER;
+
+function openSettings(){
+  document.getElementById('settingsOverlay').classList.add('open');
+  discoverAndRenderServers();
+}
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('open'); }
+function saveSettings(){
+  const sel = document.getElementById('selectBcServer');
+  if(sel && sel.value){ BC_SERVER = sel.value; localStorage.setItem('bc_inbox_server', sel.value); }
+  closeSettings();
+  reload();
+}
+
+async function discoverAndRenderServers(){
+  const wrap = document.getElementById('serverPickerWrap');
+  const saveBtn = document.getElementById('btnSaveSettings');
+  wrap.innerHTML = '<div class="server-loading"><span class="spinner-sm"></span> Leita að umhverfum…</div>';
+  saveBtn.disabled = true;
+  try {
+    // 1. Collect server names from meta block
+    const metaEl = document.getElementById('cowork-artifact-meta');
+    const meta = metaEl ? JSON.parse(metaEl.textContent) : {};
+    const fromMeta = new Set(meta.mcpServerNames || []);
+
+    // 2. Also try common bc-* name patterns — who_am_i fails silently if not registered
+    const commonNames = [
+      'bc-origo-demo','bc-cloud-events-setup','bc-origo-setup',
+      'bc-production','bc-prod','bc-staging','bc-stage','bc-test',
+      'bc-demo','bc-sandbox','bc-dev','bc-main','bc-live',
+      DEFAULT_BC_SERVER, BC_SERVER
+    ];
+    commonNames.forEach(n => fromMeta.add(n));
+
+    const servers = [...fromMeta].filter(Boolean);
+
+    // 3. Probe all in parallel — settled so failures are silent
+    const results = await Promise.allSettled(
+      servers.map(async s => {
+        const raw = await window.cowork.callMcpTool(`mcp__${s}__who_am_i`, {});
+        const d = unwrap(raw);
+        // Only accept responses with a real companyInfo.name — anything else is not a live BC connection
+        const company = d?.companyInfo?.name;
+        if(!company) throw new Error('not a valid BC response');
+        const user = d?.user?.name || d?.user?.id || '';
+        return { server: s, company, user };
+      })
+    );
+
+    const found = results
+      .filter(r => r.status === 'fulfilled')
+      .map(r => r.value)
+      // Deduplicate by server name
+      .filter((f, i, arr) => arr.findIndex(x => x.server === f.server) === i);
+
+    if(found.length === 0){
+      wrap.innerHTML = '<div class="server-error">Engin BC umhverfi fundust. Athugaðu tengingar í Cowork stillingum.</div>';
+      return;
+    }
+
+    const opts = found.map(f =>
+      `<option value="${f.server}" ${f.server === BC_SERVER ? 'selected' : ''}>${f.company} (${f.server})</option>`
+    ).join('');
+    wrap.innerHTML = `<select id="selectBcServer">${opts}</select>
+      <p class="modal-hint" style="margin-top:8px">Fundust ${found.length} umhverfi. Veldu það sem þú vilt nota.</p>`;
+    saveBtn.disabled = false;
+  } catch(e) {
+    wrap.innerHTML = `<div class="server-error">Villa við leit: ${e.message||e}</div>`;
+  }
+}
+
 const ISK = new Intl.NumberFormat('is-IS',{style:'currency',currency:'ISK',maximumFractionDigits:0});
 const DT  = new Intl.DateTimeFormat('is-IS',{day:'2-digit',month:'2-digit',year:'numeric'});
 function relTime(iso){if(!iso)return '';const d=new Date(iso),diff=(Date.now()-d)/60000;if(diff<1)return 'Rétt í þessu';if(diff<60)return Math.round(diff)+' mín síðan';if(diff<1440)return Math.round(diff/60)+' klst síðan';if(diff<10080)return Math.round(diff/1440)+' dagar síðan';return DT.format(d);}
@@ -303,8 +442,9 @@ function buildIndexes(){idxByEntryNo={};idxByRecordId={};allApprovals.forEach(a=
 function findLinked(n){if(n.approvalEntryNo>0&&idxByEntryNo[n.approvalEntryNo])return idxByEntryNo[n.approvalEntryNo];const rId=n.relatedRecordSystemId;if(rId&&rId!=='00000000-0000-0000-0000-000000000000')return idxByRecordId[rId.toUpperCase()]||null;return null;}
 function hasUnreadNotif(a){return allNotifs.some(n=>!n.isRead&&findLinked(n)===a);}
 
-async function loadApprovals(){const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_my_approvals',{});allApprovals=unwrap(raw).result||[];}
-async function loadNotifications(){const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_notifications',{take:100});allNotifs=unwrap(raw).result||[];}
+async function loadApprovals(){const raw=await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_my_approvals`,{});allApprovals=unwrap(raw).result||[];}
+async function loadNotifications(){const raw=await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_notifications`,{take:100});allNotifs=unwrap(raw).result||[];}
+async function loadCompanyName(){try{const raw=await window.cowork.callMcpTool(`mcp__${BC_SERVER}__who_am_i`,{});const d=unwrap(raw);const co=d?.companyInfo?.name||d?.company||BC_SERVER;document.getElementById('companyTag').textContent='— '+co;document.title='Innhólf — '+co;}catch(e){document.getElementById('companyTag').textContent='— '+BC_SERVER;}}
 
 function renderSummary(){const open=allApprovals.filter(a=>a.status==='Open').length,done=allApprovals.filter(a=>a.status==='Approved').length,unread=allNotifs.filter(n=>!n.isRead).length;document.getElementById('summaryBar').innerHTML=`${open>0?`<span class="summary-chip sc-open">🔴 ${open} opin samþykktarb.</span>`:''}<span class="summary-chip sc-done">✅ ${done} samþykkt</span>${unread>0?`<span class="summary-chip sc-unread">🔵 ${unread} ólesin skilaboð</span>`:''}`.trim();}
 
@@ -342,7 +482,7 @@ async function renderComments(containerId, a) {
     const filter = tableId
       ? `WHERE(Document No.=CONST(${a.documentNo}),Table ID=CONST(${tableId}))`
       : `WHERE(Document No.=CONST(${a.documentNo}))`;
-    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__get_records', { table: 'Approval Comment Line', filter, lcid: 1039 });
+    const raw  = await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_records`, { table: 'Approval Comment Line', filter, lcid: 1039 });
     const data = unwrap(raw);
     const comments = data.result || (Array.isArray(data) ? data : []);
     if (comments.length === 0) { el.innerHTML = '<p class="lines-empty">Engar athugasemdir.</p>'; return; }
@@ -365,30 +505,26 @@ async function doOpenInBC(idx, btnId) {
   if (!table || !id || id === '00000000-0000-0000-0000-000000000000') return;
   const btn = btnId ? document.getElementById(btnId) : null;
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  // Open a blank window NOW — must be synchronous within the user gesture.
+  // After the async get_page_url call the gesture context is gone and popups are blocked.
+  const newWin = window.open('', '_blank');
+
   try {
-    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__get_page_url', { table, id });
+    const raw  = await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_page_url`, { table, id });
     const data = unwrap(raw);
     const url  = typeof data === 'string' ? data
       : (data.url || data.pageUrl || data.webClientUrl
          || Object.values(data).find(v => typeof v === 'string' && v.startsWith('http')));
-    if (url) {
-      // Replace the button with a proper <a> link (window.open is blocked in sandboxed iframes)
-      if (btn) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.textContent = '↗ Opna í BC';
-        link.className = btn.className;
-        link.style.cssText = btn.style.cssText;
-        btn.replaceWith(link);
-        link.click();
-      } else {
-        window.open(url, '_blank');
-      }
+    if (url && newWin) {
+      newWin.location.href = url;
+    } else if (!url && newWin) {
+      newWin.close();
     }
+    if (btn) { btn.disabled = false; btn.textContent = '↗ Opna í BC'; }
   } catch(e) {
     console.error('get_page_url', e);
+    if (newWin) newWin.close();
     if (btn) { btn.disabled = false; btn.textContent = '↗ Opna í BC'; }
   }
 }
@@ -415,7 +551,7 @@ async function loadVendorAndShowEmailForm(a) {
 
   let vendorEmail = '', vendorName = '';
   try {
-    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__get_records', {
+    const raw  = await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_records`, {
       table: 'Purchase Header',
       filter: `WHERE(No.=CONST(${a.documentNo}))`,
       take: 1, lcid: 1039
@@ -461,7 +597,7 @@ async function doCreateEmailDraft() {
   try {
     const a             = allApprovals[currentApprovalIdx];
     const relatedTableId = isPurchase(a) ? 38 : 36;
-    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__create_email_draft', {
+    const raw  = await window.cowork.callMcpTool(`mcp__${BC_SERVER}__create_email_draft`, {
       to, subject, body, relatedTableId
     });
     const data = unwrap(raw);
@@ -497,7 +633,7 @@ async function doReply(nIdx) {
   if (btn) btn.disabled = true;
   if (res) res.innerHTML = '<div class="action-loading"><span class="spinner-sm"></span>Sendir…</div>';
   try {
-    await window.cowork.callMcpTool('mcp__bc-origo-demo__send_notification', {
+    await window.cowork.callMcpTool(`mcp__${BC_SERVER}__send_notification`, {
       recipientUserId: n.senderUserId,
       subject: 'Svar: ' + (n.subject || n.notificationType || ''),
       body: text, threadId: n.threadId, parentEntryNo: n.entryNo
@@ -520,7 +656,7 @@ async function renderLines(cId,a){
   if(!docType){el.innerHTML='<p class="lines-empty">Ekki hægt að ákvarða gerð skjals.</p>';return;}
   el.innerHTML='<div class="lines-loading"><span class="spinner-sm"></span>Sæki línur…</div>';
   try{
-    const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_document_lines',{documentNo:a.documentNo,documentType:docType,lcid:1039});
+    const raw=await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_document_lines`,{documentNo:a.documentNo,documentType:docType,lcid:1039});
     const data=unwrap(raw);
     const lines=data.result||data.records||data.lines||(Array.isArray(data)?data:[]);
     if(lines.length===0){el.innerHTML='<p class="lines-empty">Engar línur fundust.</p>';return;}
@@ -634,11 +770,11 @@ async function openNotifDrawer(idx){
   document.getElementById('drawerBody').innerHTML='<div class="state-box"><div class="spinner"></div><br>Hleður…</div>';
   openDrawer();
 
-  if(!n.isRead){window.cowork.callMcpTool('mcp__bc-origo-demo__mark_notifications_read',{entryNos:String(n.entryNo)}).then(()=>{n.isRead=true;renderNotifications();renderSummary();}).catch(()=>{});}
+  if(!n.isRead){window.cowork.callMcpTool(`mcp__${BC_SERVER}__mark_notifications_read`,{entryNos:String(n.entryNo)}).then(()=>{n.isRead=true;renderNotifications();renderSummary();}).catch(()=>{});}
 
   let msgs=[];
   try{
-    const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_notification_thread',{threadId:n.threadId});
+    const raw=await window.cowork.callMcpTool(`mcp__${BC_SERVER}__get_notification_thread`,{threadId:n.threadId});
     const data=unwrap(raw);
     msgs=Array.isArray(data.result)?data.result:Array.isArray(data.messages)?data.messages:Array.isArray(data)?data:[];
   }catch(e){}
@@ -702,12 +838,12 @@ function toggleRejectForm(fId,iId){const f=document.getElementById(fId);if(!f)re
 function setActionLoading(rId,btns){const el=document.getElementById(rId);if(el)el.innerHTML='<div class="action-loading"><span class="spinner-sm"></span>Vinn…</div>';btns.forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});}
 function setActionResult(rId,ok,msg,btns){const el=document.getElementById(rId);if(el)el.innerHTML=`<div class="action-${ok?'success':'error'}">${ok?'✓':'✗'} ${msg}</div>`;if(!ok)btns.forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});}
 
-async function doApprove(entryNo,idx){setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__approve_entries',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success){allApprovals[idx].status='Approved';setActionResult('aResult',true,'Samþykkt!',[]);renderApprovals();renderSummary();}else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
-async function doDefer(entryNo,idx){setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__delegate_approval',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success)setActionResult('aResult',true,'Framsent!',[]);else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
-async function doRejectApproval(entryNo,idx){const reason=document.getElementById('rejectReason_a')?.value||'';setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__reject_entries',{entryNo:Number(entryNo),comment:reason}));if(res.status==='Success'||res.success){allApprovals[idx].status='Rejected';setActionResult('aResult',true,'Höfnuð!',[]);renderApprovals();renderSummary();}else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
-async function doApproveLinked(entryNo,aIdx,nIdx){setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__approve_entries',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success){if(aIdx>=0)allApprovals[aIdx].status='Approved';setActionResult('lResult',true,'Samþykkt!',[]);renderApprovals();renderSummary();}else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
-async function doDeferLinked(entryNo,aIdx,nIdx){setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__delegate_approval',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success)setActionResult('lResult',true,'Framsent!',[]);else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
-async function doRejectLinked(entryNo,aIdx,nIdx){const reason=document.getElementById('rejectReason_l')?.value||'';setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__reject_entries',{entryNo:Number(entryNo),comment:reason}));if(res.status==='Success'||res.success){if(aIdx>=0)allApprovals[aIdx].status='Rejected';setActionResult('lResult',true,'Höfnuð!',[]);renderApprovals();renderSummary();}else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
+async function doApprove(entryNo,idx){setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool(`mcp__${BC_SERVER}__approve_entries`,{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success){allApprovals[idx].status='Approved';setActionResult('aResult',true,'Samþykkt!',[]);renderApprovals();renderSummary();}else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
+async function doDefer(entryNo,idx){setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool(`mcp__${BC_SERVER}__delegate_approval`,{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success)setActionResult('aResult',true,'Framsent!',[]);else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
+async function doRejectApproval(entryNo,idx){const reason=document.getElementById('rejectReason_a')?.value||'';setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool(`mcp__${BC_SERVER}__reject_entries`,{entryNo:Number(entryNo),comment:reason}));if(res.status==='Success'||res.success){allApprovals[idx].status='Rejected';setActionResult('aResult',true,'Höfnuð!',[]);renderApprovals();renderSummary();}else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
+async function doApproveLinked(entryNo,aIdx,nIdx){setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool(`mcp__${BC_SERVER}__approve_entries`,{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success){if(aIdx>=0)allApprovals[aIdx].status='Approved';setActionResult('lResult',true,'Samþykkt!',[]);renderApprovals();renderSummary();}else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
+async function doDeferLinked(entryNo,aIdx,nIdx){setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool(`mcp__${BC_SERVER}__delegate_approval`,{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success)setActionResult('lResult',true,'Framsent!',[]);else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
+async function doRejectLinked(entryNo,aIdx,nIdx){const reason=document.getElementById('rejectReason_l')?.value||'';setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool(`mcp__${BC_SERVER}__reject_entries`,{entryNo:Number(entryNo),comment:reason}));if(res.status==='Success'||res.success){if(aIdx>=0)allApprovals[aIdx].status='Rejected';setActionResult('lResult',true,'Höfnuð!',[]);renderApprovals();renderSummary();}else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
 
 async function reload(){
   const btn=document.getElementById('btnReload');
@@ -715,7 +851,7 @@ async function reload(){
   document.getElementById('approvalBody').innerHTML='<div class="state-box"><div class="spinner"></div><br>Sæki samþykktir…</div>';
   document.getElementById('notifBody').innerHTML='<div class="state-box"><div class="spinner"></div><br>Sæki skilaboð…</div>';
   try{
-    await Promise.all([loadApprovals(),loadNotifications()]);
+    await Promise.all([loadApprovals(),loadNotifications(),loadCompanyName()]);
     buildIndexes();renderSummary();renderApprovals();renderNotifications();
     if(allApprovals.filter(a=>a.status==='Open').length===0&&allApprovals.length>0)setApprovalTab('all',document.getElementById('subTabAll'));
     document.getElementById('lastUpdated').textContent='Uppfært: '+new Date().toLocaleTimeString('is-IS');
