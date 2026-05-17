@@ -1,0 +1,741 @@
+<!DOCTYPE html><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Innhólfið mitt",
+  "schemaVersion": 1,
+  "description": "Innhólf fyrir Gunnar Þór — sýnir samþykktarbeiðnir og skilaboð úr Origo Demo BC. Tvöföld tenging samþykktar/tilkynningar (approvalEntryNo + relatedRecordSystemId). Flipar: Opin/Allar á samþykktum; Ólesin/Allar á skilaboðum.",
+  "mcpTools": [
+    "mcp__bc-origo-demo__get_my_approvals",
+    "mcp__bc-origo-demo__get_notifications",
+    "mcp__bc-origo-demo__get_document_lines",
+    "mcp__bc-origo-demo__get_records",
+    "mcp__bc-origo-demo__approve_entries",
+    "mcp__bc-origo-demo__reject_entries",
+    "mcp__bc-origo-demo__delegate_approval",
+    "mcp__bc-origo-demo__send_notification",
+    "mcp__bc-origo-demo__get_notification_thread",
+    "mcp__bc-origo-demo__mark_notifications_read",
+    "mcp__bc-origo-demo__create_email_draft",
+    "mcp__bc-origo-demo__get_page_url"
+  ],
+  "mcpServerNames": [
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo",
+    "bc-origo-demo"
+  ]
+}
+</script>
+<html lang="is">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Innhólf — Origo Demo</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; color: #1a1a2e; min-height: 100vh; }
+header { background: #fff; border-bottom: 2px solid #e5e9f0; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+header h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 10px; }
+.company-tag { font-size: 12px; font-weight: 400; color: #6b7280; }
+.header-right { display: flex; align-items: center; gap: 14px; }
+.last-updated { font-size: 11px; color: #9ca3af; }
+.btn-reload { background: #f0f4ff; color: #3b82f6; border: 1px solid #bfdbfe; border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.14s; }
+.btn-reload:hover { background: #dbeafe; }
+.btn-reload:disabled { opacity: 0.55; cursor: not-allowed; }
+.summary-bar { display: flex; gap: 10px; padding: 12px 24px 0; flex-wrap: wrap; }
+.summary-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
+.sc-open   { background: #fff3e0; color: #c2410c; border-color: #fed7aa; }
+.sc-done   { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.sc-unread { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.main-wrap { padding: 16px 24px 32px; }
+.panel { background: #fff; border-radius: 12px; border: 1px solid #e5e9f0; overflow: hidden; display: flex; flex-direction: column; }
+.top-tabs { display: flex; border-bottom: 2px solid #f0f2f5; padding: 0 16px; flex-shrink: 0; }
+.top-tab { padding: 12px 18px; font-size: 13px; font-weight: 700; border: none; background: none; color: #9ca3af; cursor: pointer; position: relative; bottom: -2px; border-bottom: 2px solid transparent; transition: color 0.12s; display: flex; align-items: center; gap: 7px; }
+.top-tab:hover { color: #374151; }
+.top-tab.active { color: #1d4ed8; border-bottom: 2px solid #3b82f6; }
+.top-tab .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.badge-orange { background: #fff3e0; color: #c2410c; }
+.badge-blue   { background: #eff6ff; color: #1d4ed8; }
+.sub-tabs { display: flex; gap: 2px; padding: 10px 16px 0; border-bottom: 1px solid #f0f2f5; flex-shrink: 0; }
+.sub-tab { padding: 5px 14px; font-size: 12px; font-weight: 600; border: none; background: none; color: #9ca3af; cursor: pointer; border-radius: 6px 6px 0 0; position: relative; bottom: -1px; border-bottom: 2px solid transparent; transition: color 0.12s; }
+.sub-tab:hover { color: #374151; }
+.sub-tab.active { color: #1d4ed8; border-bottom: 2px solid #3b82f6; background: #f0f4ff; }
+.sub-tab .tc { margin-left: 4px; font-size: 11px; font-weight: 700; }
+.tab-pane { display: none; }
+.tab-pane.active { display: flex; flex-direction: column; }
+.panel-body { flex: 1; overflow-y: auto; max-height: calc(100vh - 280px); min-height: 200px; }
+.approval-card { padding: 13px 16px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: background 0.13s; display: flex; gap: 12px; align-items: flex-start; }
+.approval-card:last-child { border-bottom: none; }
+.approval-card:hover { background: #f5f8ff; }
+.ac-icon { width: 36px; height: 36px; border-radius: 9px; background: #f0f9ff; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.ac-icon.open-icon { background: #fff7ed; }
+.ac-body { flex: 1; min-width: 0; }
+.ac-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.ac-doc { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.ac-sub { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.ac-amount { font-size: 14px; font-weight: 700; color: #1d4ed8; white-space: nowrap; flex-shrink: 0; }
+.ac-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.unread-indicator { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; margin-top: 6px; }
+.sc-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.sc-chip-open     { background: #fff3e0; color: #c2410c; }
+.sc-chip-approved { background: #dcfce7; color: #166534; }
+.sc-chip-rejected { background: #fde8e8; color: #b91c1c; }
+.sc-chip-pending  { background: #f3f4f6; color: #6b7280; }
+.due-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.due-overdue { background: #fde8e8; color: #b91c1c; }
+.due-soon    { background: #fffbeb; color: #92400e; }
+.due-ok      { background: #dcfce7; color: #166534; }
+.notif-row { padding: 12px 16px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: background 0.13s; display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: start; }
+.notif-row:last-child { border-bottom: none; }
+.notif-row:hover { background: #f5f8ff; }
+.notif-row.is-read .notif-subject { font-weight: 500; color: #6b7280; }
+.notif-icon { width: 34px; height: 34px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.notif-icon.approval-icon { background: #faf5ff; }
+.notif-subject { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.notif-sender  { font-size: 11px; color: #9ca3af; }
+.notif-meta    { display: flex; align-items: center; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.notif-time    { font-size: 11px; color: #9ca3af; white-space: nowrap; text-align: right; }
+.unread-dot    { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; margin-top: 5px; }
+.la-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #faf5ff; color: #7c3aed; border: 1px solid #ede9fe; }
+.state-box { padding: 40px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
+.state-box .icon { font-size: 28px; margin-bottom: 10px; }
+.spinner { display: inline-block; width: 22px; height: 22px; border: 3px solid #e5e9f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 10px; }
+.spinner-sm { display: inline-block; width: 13px; height: 13px; border: 2px solid #e5e9f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box { padding: 12px 16px; background: #fef2f2; color: #b91c1c; font-size: 12px; border-radius: 6px; margin: 8px 16px; }
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.28); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.22s; }
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+.drawer { position: fixed; top: 0; right: 0; width: min(520px,100vw); height: 100vh; background: #fff; z-index: 201; transform: translateX(100%); transition: transform 0.24s cubic-bezier(.4,0,.2,1); display: flex; flex-direction: column; box-shadow: -6px 0 36px rgba(0,0,0,0.13); }
+.drawer.open { transform: translateX(0); }
+.drawer-header { padding: 16px 20px; border-bottom: 1px solid #e5e9f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
+.drawer-title { font-size: 15px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.drawer-title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.drawer-close { background: none; border: none; font-size: 17px; color: #9ca3af; cursor: pointer; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; transition: background 0.12s, color 0.12s; line-height: 1; }
+.drawer-close:hover { background: #f0f2f5; color: #1a1a2e; }
+.drawer-body { flex: 1; overflow-y: auto; }
+.drawer-section { padding: 14px 20px; border-bottom: 1px solid #f0f2f5; }
+.section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.detail-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; font-size: 13px; }
+.detail-row:last-child { margin-bottom: 0; }
+.detail-label { font-size: 11px; color: #9ca3af; min-width: 110px; flex-shrink: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.detail-amount { font-size: 20px; font-weight: 800; color: #1d4ed8; }
+.lines-section { padding: 0 20px 16px; }
+.lines-loading { padding: 16px 0; text-align: center; color: #9ca3af; font-size: 12px; }
+.lines-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.lines-table th { text-align: left; padding: 6px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; border-bottom: 2px solid #f0f2f5; }
+.lines-table th.num { text-align: right; }
+.lines-table td { padding: 7px 8px; border-bottom: 1px solid #f7f8fa; color: #374151; vertical-align: top; }
+.lines-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lines-table td.desc { font-weight: 500; color: #1a1a2e; }
+.lines-table td.desc small { display: block; font-size: 10px; color: #9ca3af; font-weight: 400; margin-top: 1px; }
+.lines-table tr:last-child td { border-bottom: none; }
+.lines-table tr.total-row td { font-weight: 700; border-top: 2px solid #e5e9f0; background: #f8fafc; font-size: 13px; color: #1a1a2e; }
+.lines-table tr.total-row td.num { color: #1d4ed8; font-size: 14px; }
+.lines-empty { font-size: 12px; color: #9ca3af; padding: 12px 0; font-style: italic; }
+.la-box { background: #faf5ff; border-left: 4px solid #7c3aed; padding: 14px 20px; border-bottom: 1px solid #ede9fe; }
+.la-box .la-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #7c3aed; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.la-box .detail-label { color: #9ca3af; }
+.la-box.la-resolved { background: #f9fafb; border-left-color: #d1d5db; }
+.la-box.la-resolved .la-header { color: #9ca3af; }
+.thread-msg { padding: 12px 20px; border-bottom: 1px solid #f0f2f5; }
+.thread-msg:last-child { border-bottom: none; }
+.thread-msg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.thread-sender { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.thread-time   { font-size: 11px; color: #9ca3af; }
+.thread-subject { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+.thread-body   { font-size: 13px; color: #4b5563; line-height: 1.55; white-space: pre-wrap; }
+.drawer-actions { padding: 12px 20px; display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid #f0f2f5; flex-shrink: 0; }
+.drawer-actions.la-actions { background: #faf5ff; border-top: 1px solid #ede9fe; border-bottom: 1px solid #ede9fe; }
+.btn-action { flex: 1; min-width: 80px; padding: 9px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; }
+.btn-action:active { transform: scale(0.97); }
+.btn-action:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-approve { background: #16a34a; color: #fff; }
+.btn-approve:hover:not(:disabled) { background: #15803d; }
+.btn-reject  { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+.btn-reject:hover:not(:disabled)  { background: #fee2e2; }
+.btn-defer   { background: #f0f9ff; color: #0369a1; border: 1px solid #7dd3fc; }
+.btn-defer:hover:not(:disabled)   { background: #e0f2fe; }
+/* ── Email vendor button ── */
+.btn-email { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+.btn-email:hover:not(:disabled) { background: #dcfce7; }
+/* ── Open in BC button (drawer header) ── */
+.btn-bc-link { background: #f0f4ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 7px; padding: 5px 10px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background 0.12s; display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
+.btn-bc-link:hover { background: #dbeafe; }
+.btn-bc-link:disabled { opacity: 0.45; cursor: not-allowed; }
+/* ── la-box small BC link ── */
+.btn-bc-link-sm { background: none; border: 1px solid #c4b5fd; color: #7c3aed; border-radius: 6px; padding: 3px 8px; font-size: 10px; font-weight: 700; cursor: pointer; transition: background 0.12s; }
+.btn-bc-link-sm:hover { background: #ede9fe; }
+.btn-bc-link-sm:disabled { opacity: 0.45; cursor: not-allowed; }
+/* ── Email form ── */
+.email-form { display: none; padding: 0 20px 14px; background: #f0fdf4; border-top: 1px solid #bbf7d0; }
+.email-form.visible { display: block; }
+.email-form-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #15803d; padding: 12px 0 10px; display: flex; align-items: center; gap: 6px; }
+.email-vendor-loading { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7280; padding: 6px 0; }
+.email-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; display: block; margin-bottom: 3px; }
+.email-input { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; color: #1a1a2e; margin-bottom: 10px; background: #fff; }
+.email-input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+.btn-email-send { background: #16a34a; color: #fff; padding: 9px 18px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; transition: background 0.12s; }
+.btn-email-send:hover { background: #15803d; }
+.btn-email-send:disabled { opacity: 0.45; cursor: not-allowed; }
+.email-cancel { font-size: 12px; color: #9ca3af; cursor: pointer; background: none; border: none; padding: 4px 8px; margin-left: 8px; }
+.email-cancel:hover { color: #374151; }
+.reject-form { padding: 4px 20px 14px; display: none; }
+.reject-form.la-form { background: #faf5ff; }
+.reject-form.visible { display: block; }
+.reason-input { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit; resize: vertical; margin-bottom: 8px; color: #1a1a2e; }
+.reason-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.btn-reject-confirm { background: #b91c1c; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; }
+.btn-reject-confirm:hover { background: #991b1b; }
+.action-result { padding: 8px 20px; font-size: 13px; min-height: 32px; }
+.action-result.la { background: #faf5ff; }
+.action-result.email-result-area { background: #f0fdf4; }
+.action-loading { color: #6b7280; display: flex; align-items: center; }
+.action-success { color: #16a34a; font-weight: 700; }
+.action-error   { color: #b91c1c; }
+.resolved-note { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px; margin: 8px 20px; }
+.resolved-approved { background: #dcfce7; color: #166534; }
+.resolved-rejected { background: #fde8e8; color: #b91c1c; }
+/* ── Comments ── */
+.comment-item { padding: 9px 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #e5e9f0; }
+.comment-item:last-child { margin-bottom: 0; }
+.comment-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.comment-user { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.comment-time { font-size: 11px; color: #9ca3af; }
+.comment-text { font-size: 13px; color: #374151; line-height: 1.45; }
+/* ── Reply ── */
+.reply-section { border-top: 1px solid #f0f2f5; }
+.btn-reply { background: #f0f4ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.btn-reply:hover:not(:disabled) { background: #dbeafe; }
+.reply-form { display: none; padding: 0 20px 12px; }
+.reply-form.visible { display: block; }
+.reply-send-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.btn-send { background: #1d4ed8; color: #fff; padding: 8px 18px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; white-space: nowrap; }
+.btn-send:hover:not(:disabled) { background: #1e40af; }
+.btn-send:disabled { opacity: 0.45; cursor: not-allowed; }
+.reply-cancel { font-size: 12px; color: #9ca3af; cursor: pointer; background: none; border: none; padding: 4px 8px; }
+.reply-cancel:hover { color: #374151; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📥 Innhólf mitt <span class="company-tag">— Origo Demo</span></h1>
+  <div class="header-right">
+    <span class="last-updated" id="lastUpdated">Hleður…</span>
+    <button class="btn-reload" id="btnReload" onclick="reload()">↺ Uppfæra</button>
+  </div>
+</header>
+<div class="summary-bar" id="summaryBar"></div>
+<div class="main-wrap">
+  <div class="panel">
+    <div class="top-tabs">
+      <button class="top-tab active" id="topTabApprovals" onclick="switchTopTab('approvals',this)">
+        ✅ Samþykktir <span class="badge badge-orange" id="badgeApprovals">…</span>
+      </button>
+      <button class="top-tab" id="topTabNotifs" onclick="switchTopTab('notifs',this)">
+        🔔 Skilaboð <span class="badge badge-blue" id="badgeNotifs">…</span>
+      </button>
+    </div>
+    <div class="tab-pane active" id="paneApprovals">
+      <div class="sub-tabs">
+        <button class="sub-tab active" id="subTabOpen" onclick="setApprovalTab('open',this)">Opnar <span class="tc" id="tcOpen">…</span></button>
+        <button class="sub-tab" id="subTabAll" onclick="setApprovalTab('all',this)">Allar <span class="tc" id="tcAll">…</span></button>
+      </div>
+      <div class="panel-body" id="approvalBody"><div class="state-box"><div class="spinner"></div><br>Sæki samþykktir…</div></div>
+    </div>
+    <div class="tab-pane" id="paneNotifs">
+      <div class="sub-tabs">
+        <button class="sub-tab active" id="subTabUnread" onclick="setNotifTab('unread',this)">Ólesnar <span class="tc" id="tcUnread">…</span></button>
+        <button class="sub-tab" id="subTabAllNotif" onclick="setNotifTab('all',this)">Allar <span class="tc" id="tcAllNotif">…</span></button>
+      </div>
+      <div class="panel-body" id="notifBody"><div class="state-box"><div class="spinner"></div><br>Sæki skilaboð…</div></div>
+    </div>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawerTitle"></div>
+    <div class="drawer-header-actions">
+      <div id="drawerHeaderActions"></div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+<script>
+const ISK = new Intl.NumberFormat('is-IS',{style:'currency',currency:'ISK',maximumFractionDigits:0});
+const DT  = new Intl.DateTimeFormat('is-IS',{day:'2-digit',month:'2-digit',year:'numeric'});
+function relTime(iso){if(!iso)return '';const d=new Date(iso),diff=(Date.now()-d)/60000;if(diff<1)return 'Rétt í þessu';if(diff<60)return Math.round(diff)+' mín síðan';if(diff<1440)return Math.round(diff/60)+' klst síðan';if(diff<10080)return Math.round(diff/1440)+' dagar síðan';return DT.format(d);}
+function dueChip(d){if(!d)return '';const date=new Date(d),diff=(date-Date.now())/86400000;let cls,label;if(diff<0){cls='due-overdue';label='Líðið! '+DT.format(date);}else if(diff<7){cls='due-soon';label='Gjalddagi: '+DT.format(date);}else{cls='due-ok';label='Gjalddagi: '+DT.format(date);}return `<span class="due-chip ${cls}">${label}</span>`;}
+function statusChip(s){const m={'Open':['sc-chip-open','Opið'],'Approved':['sc-chip-approved','Samþykkt'],'Rejected':['sc-chip-rejected','Hafnað']};const[cls,label]=m[s]||['sc-chip-pending',s||'—'];return `<span class="sc-chip ${cls}">${label}</span>`;}
+function formatUser(id){if(!id)return '—';return id.replace(/\./g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+function parseBody(raw){if(!raw)return '—';return raw.replace(/\*\*/g,'').replace(/^##\s*/gm,'').replace(/^#\s*/gm,'').trim();}
+function unwrap(raw){if(!raw)return {};if(typeof raw==='string'){try{return JSON.parse(raw);}catch{return {};}}if(Array.isArray(raw?.content)){const t=raw.content.find(c=>c.type==='text');if(t?.text){try{return JSON.parse(t.text);}catch{return {};}}}return raw;}
+function getTableId(a){const cap=(a.tableCaption||'').toLowerCase();if(cap.includes('innkaup')||cap.includes('purchase'))return 38;if(cap.includes('sölu')||cap.includes('sala')||cap.includes('sales'))return 36;return null;}
+function resolveDocLineType(a){const cap=(a.tableCaption||'').toLowerCase(),dt=(a.documentType||'').toLowerCase();const isPurch=cap.includes('innkaup')||cap.includes('purchase');const isSales=cap.includes('sölu')||cap.includes('sala')||cap.includes('sales');const isOrder=dt.includes('pöntun')||dt.includes('order');const isCredit=dt.includes('kredit')||dt.includes('credit');const isQuote=dt.includes('tilboð')||dt.includes('quote');if(isPurch){if(isOrder)return 'purchase order';if(isCredit)return 'purchase credit memo';if(isQuote)return 'purchase quote';return 'purchase invoice';}if(isSales){if(isOrder)return 'sales order';if(isCredit)return 'sales credit memo';if(isQuote)return 'sales quote';return 'sales invoice';}return null;}
+
+// ── BC table name for get_page_url ────────────────────────────────────────
+function resolveTableForBC(a){
+  const cap=(a.tableCaption||'').toLowerCase();
+  if(cap.includes('innkaup')||cap.includes('purchase'))return 'Purchase Header';
+  if(cap.includes('sölu')||cap.includes('sala')||cap.includes('sales'))return 'Sales Header';
+  return null;
+}
+function isPurchase(a){
+  const cap=(a.tableCaption||'').toLowerCase();
+  return cap.includes('innkaup')||cap.includes('purchase');
+}
+
+let allApprovals=[],allNotifs=[],approvalTab='open',notifTab='unread';
+let idxByEntryNo={},idxByRecordId={};
+let currentApprovalIdx=-1;
+
+function buildIndexes(){idxByEntryNo={};idxByRecordId={};allApprovals.forEach(a=>{idxByEntryNo[a.entryNo]=a;if(a.recordSystemId)idxByRecordId[a.recordSystemId.toUpperCase()]=a;});}
+function findLinked(n){if(n.approvalEntryNo>0&&idxByEntryNo[n.approvalEntryNo])return idxByEntryNo[n.approvalEntryNo];const rId=n.relatedRecordSystemId;if(rId&&rId!=='00000000-0000-0000-0000-000000000000')return idxByRecordId[rId.toUpperCase()]||null;return null;}
+function hasUnreadNotif(a){return allNotifs.some(n=>!n.isRead&&findLinked(n)===a);}
+
+async function loadApprovals(){const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_my_approvals',{});allApprovals=unwrap(raw).result||[];}
+async function loadNotifications(){const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_notifications',{take:100});allNotifs=unwrap(raw).result||[];}
+
+function renderSummary(){const open=allApprovals.filter(a=>a.status==='Open').length,done=allApprovals.filter(a=>a.status==='Approved').length,unread=allNotifs.filter(n=>!n.isRead).length;document.getElementById('summaryBar').innerHTML=`${open>0?`<span class="summary-chip sc-open">🔴 ${open} opin samþykktarb.</span>`:''}<span class="summary-chip sc-done">✅ ${done} samþykkt</span>${unread>0?`<span class="summary-chip sc-unread">🔵 ${unread} ólesin skilaboð</span>`:''}`.trim();}
+
+function switchTopTab(tab,btn){document.querySelectorAll('.top-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));document.getElementById(tab==='approvals'?'paneApprovals':'paneNotifs').classList.add('active');}
+function setApprovalTab(tab,btn){approvalTab=tab;document.querySelectorAll('#subTabOpen,#subTabAll').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderApprovals();}
+function setNotifTab(tab,btn){notifTab=tab;document.querySelectorAll('#subTabUnread,#subTabAllNotif').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderNotifications();}
+
+function renderApprovals(){
+  const open=allApprovals.filter(a=>a.status==='Open');
+  document.getElementById('tcOpen').textContent=open.length;
+  document.getElementById('tcAll').textContent=allApprovals.length;
+  document.getElementById('badgeApprovals').textContent=open.length;
+  const items=approvalTab==='open'?open:allApprovals;
+  const el=document.getElementById('approvalBody');
+  if(items.length===0){el.innerHTML=approvalTab==='open'?'<div class="state-box"><div class="icon">🎉</div>Engar opnar samþykktarbeiðnir</div>':'<div class="state-box"><div class="icon">📋</div>Engar samþykktarfærslur</div>';return;}
+  el.innerHTML=items.map(a=>{const idx=allApprovals.indexOf(a),isOpen=a.status==='Open',unread=hasUnreadNotif(a);return `<div class="approval-card" onclick="openApprovalDrawer(${idx})"><div class="ac-icon ${isOpen?'open-icon':''}">${isOpen?'⏳':a.status==='Approved'?'✅':'❌'}</div><div class="ac-body"><div class="ac-top"><div><div class="ac-doc">${a.documentNo}</div><div class="ac-sub">${a.tableCaption||''} · ${a.approvalCode||''}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><div class="ac-amount">${ISK.format(parseFloat(a.amountLCY||0))}</div>${unread?'<div class="unread-indicator" title="Ólesin skilaboð tengd þessum skjali"></div>':''}</div></div><div class="ac-meta">${statusChip(a.status)}${dueChip(a.dueDate)}</div></div></div>`;}).join('');}
+
+function renderNotifications(){
+  const unread=allNotifs.filter(n=>!n.isRead);
+  document.getElementById('tcUnread').textContent=unread.length;
+  document.getElementById('tcAllNotif').textContent=allNotifs.length;
+  document.getElementById('badgeNotifs').textContent=unread.length;
+  const items=notifTab==='unread'?unread:allNotifs;
+  const el=document.getElementById('notifBody');
+  if(items.length===0){el.innerHTML=notifTab==='unread'?'<div class="state-box"><div class="icon">✨</div>Engin ólesin skilaboð</div>':'<div class="state-box"><div class="icon">📬</div>Engin skilaboð</div>';return;}
+  el.innerHTML=items.map(n=>{const linked=findLinked(n),readCls=n.isRead?' is-read':'',icon=linked?'📋':({'New Record':'📄','Approval':'✅','Overdue':'⚠️'}[n.notificationType]||'💬'),iconCls=linked?' approval-icon':'',gi=allNotifs.indexOf(n),laChip=linked?`<span class="la-chip">📋 ${linked.documentNo} ${statusChip(linked.status)} ${ISK.format(parseFloat(linked.amountLCY||0))}</span>`:'';return `<div class="notif-row${readCls}" onclick="openNotifDrawer(${gi})"><div class="notif-icon${iconCls}">${icon}</div><div><div class="notif-subject">${n.subject||n.notificationType||'—'}</div><div class="notif-sender">Frá: ${formatUser(n.senderUserId)}</div>${laChip?`<div class="notif-meta">${laChip}</div>`:''}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="notif-time">${relTime(n.systemCreatedAt)}</div>${!n.isRead?'<div class="unread-dot"></div>':''}</div></div>`;}).join('');}
+
+// ── Approval comments ──────────────────────────────────────────────────────
+async function renderComments(containerId, a) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '<div class="lines-loading"><span class="spinner-sm"></span>Sæki athugasemdir…</div>';
+  try {
+    const tableId = getTableId(a);
+    const filter = tableId
+      ? `WHERE(Document No.=CONST(${a.documentNo}),Table ID=CONST(${tableId}))`
+      : `WHERE(Document No.=CONST(${a.documentNo}))`;
+    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__get_records', { table: 'Approval Comment Line', filter, lcid: 1039 });
+    const data = unwrap(raw);
+    const comments = data.result || (Array.isArray(data) ? data : []);
+    if (comments.length === 0) { el.innerHTML = '<p class="lines-empty">Engar athugasemdir.</p>'; return; }
+    el.innerHTML = comments.map(c => {
+      const f = c.fields || c;
+      const user = formatUser(f.userID || f.UserID || '');
+      const ts   = f.dateandTime || f.DateandTime || f.dateAndTime || f.DateAndTime || '';
+      const text = f.comment || f.Comment || '—';
+      return `<div class="comment-item"><div class="comment-header"><span class="comment-user">${user}</span><span class="comment-time">${relTime(ts)||DT.format(new Date(ts))}</span></div><div class="comment-text">${text}</div></div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = `<p class="lines-empty" style="color:#b91c1c">Villa: ${e.message||e}</p>`; }
+}
+
+// ── Open in BC ─────────────────────────────────────────────────────────────
+async function doOpenInBC(idx, btnId) {
+  const a = allApprovals[idx];
+  if (!a) return;
+  const table = resolveTableForBC(a);
+  const id    = a.recordSystemId;
+  if (!table || !id || id === '00000000-0000-0000-0000-000000000000') return;
+  const btn = btnId ? document.getElementById(btnId) : null;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__get_page_url', { table, id });
+    const data = unwrap(raw);
+    const url  = typeof data === 'string' ? data
+      : (data.url || data.pageUrl || data.webClientUrl
+         || Object.values(data).find(v => typeof v === 'string' && v.startsWith('http')));
+    if (url) {
+      // Replace the button with a proper <a> link (window.open is blocked in sandboxed iframes)
+      if (btn) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '↗ Opna í BC';
+        link.className = btn.className;
+        link.style.cssText = btn.style.cssText;
+        btn.replaceWith(link);
+        link.click();
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+  } catch(e) {
+    console.error('get_page_url', e);
+    if (btn) { btn.disabled = false; btn.textContent = '↗ Opna í BC'; }
+  }
+}
+
+// ── Email vendor: toggle form ───────────────────────────────────────────────
+function toggleEmailForm() {
+  const f = document.getElementById('emailForm');
+  if (!f) return;
+  const opening = !f.classList.contains('visible');
+  f.classList.toggle('visible');
+  if (opening && currentApprovalIdx >= 0) {
+    loadVendorAndShowEmailForm(allApprovals[currentApprovalIdx]);
+  }
+}
+
+// ── Email vendor: fetch vendor email from Purchase Header ───────────────────
+async function loadVendorAndShowEmailForm(a) {
+  const loadEl   = document.getElementById('emailVendorLoading');
+  const fieldsEl = document.getElementById('emailFormFields');
+  if (!loadEl || !fieldsEl) return;
+  loadEl.style.display   = 'flex';
+  fieldsEl.style.display = 'none';
+  document.getElementById('emailResult').innerHTML = '';
+
+  let vendorEmail = '', vendorName = '';
+  try {
+    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__get_records', {
+      table: 'Purchase Header',
+      filter: `WHERE(No.=CONST(${a.documentNo}))`,
+      take: 1, lcid: 1039
+    });
+    const data = unwrap(raw);
+    const rec  = data.result?.[0] || (Array.isArray(data) ? data[0] : null);
+    const f    = rec?.fields || rec || {};
+    vendorEmail = f['Buy-from E-Mail'] || f['BuyFromEmail']    || f['E-Mail']          || '';
+    vendorName  = f['Buy-from Vendor Name'] || f['BuyFromVendorName'] || f['Buy-from Vendor No.'] || '';
+  } catch(e) { console.error('Vendor fetch failed', e); }
+
+  const toEl      = document.getElementById('emailTo');
+  const subjectEl = document.getElementById('emailSubject');
+  const bodyEl    = document.getElementById('emailBody');
+  if (toEl)      toEl.value      = vendorEmail;
+  if (subjectEl) subjectEl.value = `Fyrirspurn vegna reiknings ${a.documentNo}`;
+  if (bodyEl)    bodyEl.value    =
+    `Sæl/l${vendorName ? ' ' + vendorName : ''},\n\n` +
+    `Við erum að fara yfir reikning ${a.documentNo}` +
+    `${a.amountLCY ? ' að upphæð ' + ISK.format(parseFloat(a.amountLCY)) : ''} ` +
+    `og höfum nokkrar spurningar.\n\n` +
+    `[Skrifaðu fyrirspurnina hér…]\n\nKveðja,`;
+
+  loadEl.style.display   = 'none';
+  fieldsEl.style.display = 'block';
+  if (toEl && !toEl.value) toEl.focus();
+  else bodyEl?.focus();
+}
+
+// ── Email vendor: create draft in BC outbox ─────────────────────────────────
+async function doCreateEmailDraft() {
+  const to      = (document.getElementById('emailTo')?.value      || '').trim();
+  const subject = (document.getElementById('emailSubject')?.value  || '').trim();
+  const body    = (document.getElementById('emailBody')?.value     || '').trim();
+  const btn     = document.getElementById('emailSendBtn');
+  const res     = document.getElementById('emailResult');
+  if (!to || !subject) {
+    if (res) res.innerHTML = '<div class="action-error">✗ Fylla þarf út viðtakanda og efni</div>';
+    return;
+  }
+  if (btn) btn.disabled = true;
+  if (res) res.innerHTML = '<div class="action-loading"><span class="spinner-sm"></span>Stofna drög í BC…</div>';
+  try {
+    const a             = allApprovals[currentApprovalIdx];
+    const relatedTableId = isPurchase(a) ? 38 : 36;
+    const raw  = await window.cowork.callMcpTool('mcp__bc-origo-demo__create_email_draft', {
+      to, subject, body, relatedTableId
+    });
+    const data = unwrap(raw);
+    const outboxUrl = data.outboxUrl || data.url || data.webClientUrl
+      || Object.values(data).find(v => typeof v === 'string' && v.startsWith('http'));
+    if (outboxUrl) {
+      if (res) res.innerHTML =
+        `<div class="action-success">✓ Drög stofnuð — <a href="${outboxUrl}" target="_blank" style="color:#15803d;font-weight:700;text-decoration:underline">Opna í BC til að senda →</a></div>`;
+      window.open(outboxUrl, '_blank');
+    } else {
+      if (res) res.innerHTML = '<div class="action-success">✓ Drög stofnuð í BC</div>';
+    }
+    document.getElementById('emailForm')?.classList.remove('visible');
+  } catch(e) {
+    if (res) res.innerHTML = `<div class="action-error">✗ ${e.message||e}</div>`;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── Reply to notification ──────────────────────────────────────────────────
+function toggleReply() {
+  const f = document.getElementById('replyForm');
+  if (!f) return;
+  f.classList.toggle('visible');
+  if (f.classList.contains('visible')) document.getElementById('replyText')?.focus();
+}
+async function doReply(nIdx) {
+  const n = allNotifs[nIdx];
+  const text = (document.getElementById('replyText')?.value || '').trim();
+  if (!text) return;
+  const btn = document.getElementById('replyBtn');
+  const res = document.getElementById('replyResult');
+  if (btn) btn.disabled = true;
+  if (res) res.innerHTML = '<div class="action-loading"><span class="spinner-sm"></span>Sendir…</div>';
+  try {
+    await window.cowork.callMcpTool('mcp__bc-origo-demo__send_notification', {
+      recipientUserId: n.senderUserId,
+      subject: 'Svar: ' + (n.subject || n.notificationType || ''),
+      body: text, threadId: n.threadId, parentEntryNo: n.entryNo
+    });
+    if (res) res.innerHTML = '<div class="action-success">✓ Svar sent til ' + formatUser(n.senderUserId) + '</div>';
+    if (document.getElementById('replyText')) document.getElementById('replyText').value = '';
+    document.getElementById('replyForm')?.classList.remove('visible');
+  } catch(e) {
+    if (res) res.innerHTML = `<div class="action-error">✗ ${e.message||e}</div>`;
+    if (btn) btn.disabled = false;
+  }
+}
+
+function openDrawer(){document.getElementById('drawerOverlay').classList.add('open');document.getElementById('drawer').classList.add('open');}
+function closeDrawer(){document.getElementById('drawerOverlay').classList.remove('open');document.getElementById('drawer').classList.remove('open');}
+
+async function renderLines(cId,a){
+  const el=document.getElementById(cId);if(!el)return;
+  const docType=resolveDocLineType(a);
+  if(!docType){el.innerHTML='<p class="lines-empty">Ekki hægt að ákvarða gerð skjals.</p>';return;}
+  el.innerHTML='<div class="lines-loading"><span class="spinner-sm"></span>Sæki línur…</div>';
+  try{
+    const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_document_lines',{documentNo:a.documentNo,documentType:docType,lcid:1039});
+    const data=unwrap(raw);
+    const lines=data.result||data.records||data.lines||(Array.isArray(data)?data:[]);
+    if(lines.length===0){el.innerHTML='<p class="lines-empty">Engar línur fundust.</p>';return;}
+    let total=0;
+    const rows=lines.map(l=>{
+      const f=l.fields||l;
+      const desc=f.Description||f.description||f.name||'—';
+      const itemNo=f.No_||f.no||f.No||f.itemNo||'';
+      const qty=f.Quantity!==undefined?f.Quantity:(f.quantity!==undefined?f.quantity:'');
+      const uPrice=parseFloat(f.DirectUnitCost||f.UnitCostLCY||f.unitPrice||f.UnitPrice||f.unitCost||0);
+      const amt=parseFloat(f.Amount||f.LineAmount||f.lineAmount||f.amount||f.amountExclVAT||0);
+      total+=amt;
+      return `<tr><td class="desc">${desc}${itemNo?`<small>${itemNo}</small>`:''}</td><td class="num">${qty!==''&&qty!=='0'?qty:'—'}</td><td class="num">${uPrice?ISK.format(uPrice):'—'}</td><td class="num">${ISK.format(amt)}</td></tr>`;
+    }).join('');
+    el.innerHTML=`<table class="lines-table"><thead><tr><th>Lýsing</th><th class="num">Magn</th><th class="num">Einingaverð</th><th class="num">Upphæð</th></tr></thead><tbody>${rows}<tr class="total-row"><td colspan="3">Samtals</td><td class="num">${ISK.format(total)}</td></tr></tbody></table>`;
+  }catch(e){el.innerHTML=`<p class="lines-empty" style="color:#b91c1c">Villa: ${e.message||e}</p>`;}
+}
+
+// ── Approval drawer ─────────────────────────────────────────────────────────
+function openApprovalDrawer(idx){
+  currentApprovalIdx = idx;
+  const a = allApprovals[idx], isOpen = a.status === 'Open';
+  const hasBcLink = a.recordSystemId && a.recordSystemId !== '00000000-0000-0000-0000-000000000000' && resolveTableForBC(a);
+  const hasPurchase = isPurchase(a);
+
+  // Title
+  document.getElementById('drawerTitle').innerHTML =
+    `<span>${isOpen?'⏳':a.status==='Approved'?'✅':'❌'}</span><span class="drawer-title-text">${a.documentNo} ${statusChip(a.status)}</span>`;
+
+  // Header actions — Opna í BC button
+  document.getElementById('drawerHeaderActions').innerHTML = hasBcLink
+    ? `<button class="btn-bc-link" id="bcLinkBtn" onclick="doOpenInBC(${idx},'bcLinkBtn')">↗ Opna í BC</button>`
+    : '';
+
+  // Body
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="drawer-section"><div class="section-label">Upplýsingar</div>
+      <div class="detail-row"><span class="detail-label">Skjalsnr.</span><strong>${a.documentNo}</strong></div>
+      <div class="detail-row"><span class="detail-label">Upphæð</span><span class="detail-amount">${ISK.format(parseFloat(a.amountLCY||0))}</span></div>
+      <div class="detail-row"><span class="detail-label">Tegund</span><span>${a.tableCaption||''} · ${a.documentType||''}</span></div>
+      <div class="detail-row"><span class="detail-label">Staða</span>${statusChip(a.status)}</div>
+      <div class="detail-row"><span class="detail-label">Gjalddagi</span>${dueChip(a.dueDate)||'—'}</div>
+      ${a.approverId?`<div class="detail-row"><span class="detail-label">Samþykktaraðili</span><span>${formatUser(a.approverId)}</span></div>`:''}
+      <div class="detail-row"><span class="detail-label">Kóði</span><span style="font-size:12px;color:#9ca3af">${a.approvalCode||'—'}</span></div>
+    </div>
+    <div class="drawer-section"><div class="section-label">📄 Línur skjals</div><div class="lines-section"><div id="linesContainer"></div></div></div>
+    <div class="drawer-section"><div class="section-label">💬 Athugasemdir</div><div id="commentsContainer" style="padding-top:2px"></div></div>
+    ${isOpen ? `
+      <div class="reject-form" id="rejectForm_a">
+        <div class="section-label" style="padding-top:4px">Ástæða höfnunar</div>
+        <textarea class="reason-input" id="rejectReason_a" placeholder="Skrifaðu ástæðu…" rows="3"></textarea>
+        <button class="btn-reject-confirm" onclick="doRejectApproval(${a.entryNo},${idx})">Staðfesta höfnun</button>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn-action btn-approve" id="aBtn_approve" onclick="doApprove(${a.entryNo},${idx})">✓ Samþykkja</button>
+        <button class="btn-action btn-reject"  id="aBtn_reject"  onclick="toggleRejectForm('rejectForm_a','rejectReason_a')">✗ Hafna</button>
+        <button class="btn-action btn-defer"   id="aBtn_defer"   onclick="doDefer(${a.entryNo},${idx})">→ Framsenda</button>
+      </div>
+      <div class="action-result" id="aResult"></div>
+    ` : `
+      <div style="padding:14px 20px">
+        ${a.status==='Approved'?'<div class="resolved-note resolved-approved">✓ Þessi samþykkt hefur verið samþykkt</div>':''}
+        ${a.status==='Rejected'?'<div class="resolved-note resolved-rejected">✗ Þessari samþykkt var hafnað</div>':''}
+      </div>
+    `}
+    ${hasPurchase ? `
+      <div class="drawer-actions" style="border-top:2px solid #dcfce7">
+        <button class="btn-action btn-email" onclick="toggleEmailForm()">📧 Fyrirspurn til lánardrottins</button>
+      </div>
+      <div class="email-form" id="emailForm">
+        <div class="email-form-header">📧 Tölvupóstur til lánardrottins</div>
+        <div class="email-vendor-loading" id="emailVendorLoading">
+          <span class="spinner-sm"></span>Sæki tölvupóst lánardrottins…
+        </div>
+        <div id="emailFormFields" style="display:none">
+          <label class="email-label">VIÐTAKANDI</label>
+          <input class="email-input" id="emailTo" type="email" placeholder="netfang@lánardrottinn.is" />
+          <label class="email-label">EFNI</label>
+          <input class="email-input" id="emailSubject" type="text" />
+          <label class="email-label">SKILABOÐ</label>
+          <textarea class="email-input" id="emailBody" rows="7" style="resize:vertical"></textarea>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="btn-email-send" id="emailSendBtn" onclick="doCreateEmailDraft()">📧 Stofna drög í BC</button>
+            <button class="email-cancel" onclick="toggleEmailForm()">Hætta við</button>
+          </div>
+        </div>
+      </div>
+      <div class="action-result email-result-area" id="emailResult"></div>
+    ` : ''}`;
+
+  openDrawer();
+  renderLines('linesContainer', a);
+  renderComments('commentsContainer', a);
+}
+
+// ── Notification drawer ─────────────────────────────────────────────────────
+async function openNotifDrawer(idx){
+  const n=allNotifs[idx],linked=findLinked(n),linkedIdx=linked?allApprovals.indexOf(linked):-1;
+
+  document.getElementById('drawerTitle').innerHTML=
+    `<span>${linked?'📋':({'New Record':'📄','Approval':'✅','Overdue':'⚠️'}[n.notificationType]||'💬')}</span><span class="drawer-title-text">${n.subject||n.notificationType||'—'}</span>`;
+
+  // Header: BC link for linked approval
+  const linkedHasBcLink = linked && linked.recordSystemId
+    && linked.recordSystemId !== '00000000-0000-0000-0000-000000000000'
+    && resolveTableForBC(linked) && linkedIdx >= 0;
+  document.getElementById('drawerHeaderActions').innerHTML = linkedHasBcLink
+    ? `<button class="btn-bc-link" id="bcLinkBtnN" onclick="doOpenInBC(${linkedIdx},'bcLinkBtnN')">↗ Opna í BC</button>`
+    : '';
+
+  document.getElementById('drawerBody').innerHTML='<div class="state-box"><div class="spinner"></div><br>Hleður…</div>';
+  openDrawer();
+
+  if(!n.isRead){window.cowork.callMcpTool('mcp__bc-origo-demo__mark_notifications_read',{entryNos:String(n.entryNo)}).then(()=>{n.isRead=true;renderNotifications();renderSummary();}).catch(()=>{});}
+
+  let msgs=[];
+  try{
+    const raw=await window.cowork.callMcpTool('mcp__bc-origo-demo__get_notification_thread',{threadId:n.threadId});
+    const data=unwrap(raw);
+    msgs=Array.isArray(data.result)?data.result:Array.isArray(data.messages)?data.messages:Array.isArray(data)?data:[];
+  }catch(e){}
+
+  let html='';
+  if(linked){
+    const isOpen=linked.status==='Open';
+    html+=`<div class="la-box${isOpen?'':' la-resolved'}">
+      <div class="la-header">
+        <span>📋 Tengd samþykktarbeiðni</span>
+      </div>
+      <div class="detail-row"><span class="detail-label">Skjalsnr.</span><strong>${linked.documentNo}</strong></div>
+      <div class="detail-row"><span class="detail-label">Upphæð</span><span class="detail-amount" style="font-size:16px">${ISK.format(parseFloat(linked.amountLCY||0))}</span></div>
+      <div class="detail-row"><span class="detail-label">Tegund</span><span>${linked.tableCaption||''} · ${linked.documentType||''}</span></div>
+      <div class="detail-row"><span class="detail-label">Staða</span>${statusChip(linked.status)}</div>
+      ${dueChip(linked.dueDate)?`<div class="detail-row"><span class="detail-label">Gjalddagi</span>${dueChip(linked.dueDate)}</div>`:''}
+    </div>
+    ${isOpen?`
+      <div class="reject-form la-form" id="rejectForm_l">
+        <div class="section-label" style="padding-top:4px">Ástæða höfnunar</div>
+        <textarea class="reason-input" id="rejectReason_l" placeholder="Skrifaðu ástæðu…" rows="3"></textarea>
+        <button class="btn-reject-confirm" onclick="doRejectLinked(${linked.entryNo},${linkedIdx},${idx})">Staðfesta höfnun</button>
+      </div>
+      <div class="drawer-actions la-actions">
+        <button class="btn-action btn-approve" id="lBtn_approve" onclick="doApproveLinked(${linked.entryNo},${linkedIdx},${idx})">✓ Samþykkja</button>
+        <button class="btn-action btn-reject"  id="lBtn_reject"  onclick="toggleRejectForm('rejectForm_l','rejectReason_l')">✗ Hafna</button>
+        <button class="btn-action btn-defer"   id="lBtn_defer"   onclick="doDeferLinked(${linked.entryNo},${linkedIdx},${idx})">→ Framsenda</button>
+      </div>
+      <div class="action-result la" id="lResult"></div>
+    `:`<div style="background:#faf5ff;padding:10px 20px;border-bottom:1px solid #ede9fe">
+        ${linked.status==='Approved'?'<span class="resolved-note resolved-approved">✓ Þessi samþykkt var þegar samþykkt</span>':''}
+        ${linked.status==='Rejected'?'<span class="resolved-note resolved-rejected">✗ Þessari samþykkt var hafnað</span>':''}
+      </div>`}`;
+  }
+
+  html+='<div class="drawer-section"><div class="section-label">Skilaboð</div></div>';
+  if(msgs.length===0){
+    html+=`<div class="thread-msg"><div class="thread-msg-header"><span class="thread-sender">${formatUser(n.senderUserId)}</span><span class="thread-time">${relTime(n.systemCreatedAt)}</span></div><div class="thread-body">${parseBody(n.body||n.subject)}</div></div>`;
+  } else {
+    html+=msgs.map(m=>`<div class="thread-msg"><div class="thread-msg-header"><span class="thread-sender">${formatUser(m.senderUserId||m.sender||n.senderUserId)}</span><span class="thread-time">${relTime(m.systemCreatedAt||m.createdAt)}</span></div>${m.subject&&m.subject!==n.subject?`<div class="thread-subject">${m.subject}</div>`:''}<div class="thread-body">${parseBody(m.body||m.message||m.subject)}</div></div>`).join('');
+  }
+
+  html += `<div class="reply-section">
+    <div class="drawer-actions">
+      <button class="btn-action btn-reply" onclick="toggleReply()">↩ Svara ${formatUser(n.senderUserId)}</button>
+    </div>
+    <div class="reply-form" id="replyForm">
+      <textarea class="reason-input" id="replyText" placeholder="Skrifaðu svar til ${formatUser(n.senderUserId)}…" rows="3"></textarea>
+      <div class="reply-send-row">
+        <button class="btn-send" id="replyBtn" onclick="doReply(${idx})">Senda →</button>
+        <button class="reply-cancel" onclick="toggleReply()">Hætta við</button>
+      </div>
+    </div>
+    <div class="action-result" id="replyResult"></div>
+  </div>`;
+
+  document.getElementById('drawerBody').innerHTML=html;
+}
+
+function toggleRejectForm(fId,iId){const f=document.getElementById(fId);if(!f)return;f.classList.toggle('visible');if(f.classList.contains('visible'))document.getElementById(iId)?.focus();}
+function setActionLoading(rId,btns){const el=document.getElementById(rId);if(el)el.innerHTML='<div class="action-loading"><span class="spinner-sm"></span>Vinn…</div>';btns.forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});}
+function setActionResult(rId,ok,msg,btns){const el=document.getElementById(rId);if(el)el.innerHTML=`<div class="action-${ok?'success':'error'}">${ok?'✓':'✗'} ${msg}</div>`;if(!ok)btns.forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});}
+
+async function doApprove(entryNo,idx){setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__approve_entries',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success){allApprovals[idx].status='Approved';setActionResult('aResult',true,'Samþykkt!',[]);renderApprovals();renderSummary();}else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
+async function doDefer(entryNo,idx){setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__delegate_approval',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success)setActionResult('aResult',true,'Framsent!',[]);else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
+async function doRejectApproval(entryNo,idx){const reason=document.getElementById('rejectReason_a')?.value||'';setActionLoading('aResult',['aBtn_approve','aBtn_reject','aBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__reject_entries',{entryNo:Number(entryNo),comment:reason}));if(res.status==='Success'||res.success){allApprovals[idx].status='Rejected';setActionResult('aResult',true,'Höfnuð!',[]);renderApprovals();renderSummary();}else setActionResult('aResult',false,res.message||'Villa',['aBtn_approve','aBtn_reject','aBtn_defer']);}catch(e){setActionResult('aResult',false,e.message||e,['aBtn_approve','aBtn_reject','aBtn_defer']);}}
+async function doApproveLinked(entryNo,aIdx,nIdx){setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__approve_entries',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success){if(aIdx>=0)allApprovals[aIdx].status='Approved';setActionResult('lResult',true,'Samþykkt!',[]);renderApprovals();renderSummary();}else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
+async function doDeferLinked(entryNo,aIdx,nIdx){setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__delegate_approval',{entryNo:Number(entryNo)}));if(res.status==='Success'||res.success)setActionResult('lResult',true,'Framsent!',[]);else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
+async function doRejectLinked(entryNo,aIdx,nIdx){const reason=document.getElementById('rejectReason_l')?.value||'';setActionLoading('lResult',['lBtn_approve','lBtn_reject','lBtn_defer']);try{const res=unwrap(await window.cowork.callMcpTool('mcp__bc-origo-demo__reject_entries',{entryNo:Number(entryNo),comment:reason}));if(res.status==='Success'||res.success){if(aIdx>=0)allApprovals[aIdx].status='Rejected';setActionResult('lResult',true,'Höfnuð!',[]);renderApprovals();renderSummary();}else setActionResult('lResult',false,res.message||'Villa',['lBtn_approve','lBtn_reject','lBtn_defer']);}catch(e){setActionResult('lResult',false,e.message||e,['lBtn_approve','lBtn_reject','lBtn_defer']);}}
+
+async function reload(){
+  const btn=document.getElementById('btnReload');
+  btn.disabled=true;btn.textContent='↺ Hleður…';
+  document.getElementById('approvalBody').innerHTML='<div class="state-box"><div class="spinner"></div><br>Sæki samþykktir…</div>';
+  document.getElementById('notifBody').innerHTML='<div class="state-box"><div class="spinner"></div><br>Sæki skilaboð…</div>';
+  try{
+    await Promise.all([loadApprovals(),loadNotifications()]);
+    buildIndexes();renderSummary();renderApprovals();renderNotifications();
+    if(allApprovals.filter(a=>a.status==='Open').length===0&&allApprovals.length>0)setApprovalTab('all',document.getElementById('subTabAll'));
+    document.getElementById('lastUpdated').textContent='Uppfært: '+new Date().toLocaleTimeString('is-IS');
+  }catch(e){document.getElementById('approvalBody').innerHTML=`<div class="error-box">Villa: ${e.message||e}</div>`;}
+  btn.disabled=false;btn.textContent='↺ Uppfæra';
+}
+// Wait for window.cowork to be injected by the Cowork platform before loading
+function waitForCowork(attempts) {
+  if (window.cowork && typeof window.cowork.callMcpTool === 'function') {
+    reload();
+    return;
+  }
+  if (attempts <= 0) {
+    document.getElementById('approvalBody').innerHTML =
+      '<div class="error-box">Villa: Cowork tenging ekki tiltæk — reyndu að endurhlaða síðuna.</div>';
+    return;
+  }
+  setTimeout(() => waitForCowork(attempts - 1), 300);
+}
+waitForCowork(30);
+</script>
+</body>
+</html>
