@@ -5,7 +5,7 @@ description: >
   the MCP server at dynamics.is, skills/prompts stored in BC, memory tools,
   default skills/notes/prompts, UBL templates, or `/origo-bc-*` commands.
 metadata:
-  version: "1.0.2"
+  version: "1.0.3"
   author: "Origo hf."
 references:
   - url: https://github.com/businesscentralal/origo-bc-plugin/blob/main/plugins/origo-bc/skills/origo-bc-accounting/references/TOOLS.md
@@ -108,9 +108,9 @@ user and company memory.
 
 `who_am_i` returns LCID. Rules:
 1. Reply in that language by default. Follow user's lead if they switch.
-2. Pass numeric LCID to MCP tools matching the user's active language (ISL→1039, ENU→1033).
+2. Pass the numeric LCID from `who_am_i` to **every** subsequent MCP call that accepts an `lcid` parameter (ISL→1039, ENU→1033). This ensures translated captions, error messages, and option values are returned in the user's language.
 3. Present tool output in the user's active language.
-4. On company switch, adopt the new LCID immediately.
+4. On company switch, repeat `who_am_i` and adopt the new LCID immediately — all subsequent calls use the updated value.
 5. Fallback: Icelandic (1039).
 
 ---
