@@ -11,7 +11,7 @@ description: >
   AES-256-GCM blob is validated end-to-end and patched into the config
   without a clipboard hand-off.
 metadata:
-  version: "0.5.1"
+  version: "0.5.2"
   author: "Origo hf."
 ---
 

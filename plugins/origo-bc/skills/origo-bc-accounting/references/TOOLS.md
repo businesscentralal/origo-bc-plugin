@@ -1,164 +1,207 @@
 # Tool Reference — Notifications & Approvals
 
 > Loaded on demand. Only read this file when working with notification
-> or approval tools for the first time in a session.
+> or approval message types for the first time in a session.
 
-## Notification tools
+All notification and approval operations are invoked via the
+`call_message_type` tool. There are no standalone notification/approval
+tools any more. Every call has the same shape:
 
-| Tool | Direction | Purpose |
+```js
+call_message_type({ type: "<Message.Type>", data: { /* fields */ } })
+```
+
+The authoritative per-type schema (with current parameter names, defaults
+and error messages) is available at runtime via:
+
+```js
+get_message_type_help({ type: "<Message.Type>" })
+```
+
+When in doubt, call `get_message_type_help` first — it is regenerated
+from the server source and never goes stale.
+
+## Notification message types
+
+| Type | Direction | Purpose |
 |------|-----------|---------|
-| `send_notification` | Inbound | Send a notification to a BC user |
-| `get_notifications` | Outbound | Retrieve notifications for the authenticated user |
-| `mark_notifications_read` | Inbound | Mark notifications as read or unread |
-| `get_notification_count` | Outbound | Get total / unread / read counts |
-| `get_notification_thread` | Outbound | Retrieve all notifications in a specific thread |
+| `User.Notification.Send` | Inbound | Send a notification to a BC user |
+| `User.Notification.Get` | Outbound | Retrieve notifications for the authenticated user |
+| `User.Notification.Read` | Inbound | Mark notifications as read or unread |
+| `User.Notification.Count` | Outbound | Get total / unread / read counts |
+| `User.Notification.Thread` | Outbound | Retrieve all notifications in a specific thread |
 
-### send_notification
+### `User.Notification.Send`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `recipientUserId` | Yes | String | BC User ID of the recipient |
-| `subject` | Yes | String | Subject line |
-| `body` | No | String | Body text |
-| `threadId` | No | String (GUID) | Groups notifications into a thread |
-| `parentEntryNo` | No | Integer | Parent entry (for threaded replies) |
-| `relatedTableId` | No | Integer | Table ID of the related record |
-| `relatedRecordSystemId` | No | String (GUID) | SystemId of the related record |
-| `notificationType` | No | String | `New Record`, `Approval`, or `Overdue` |
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `recipientUserId` | Yes | Code[50] | BC user name of the recipient |
+| `subject` | Yes | Text[250] | Subject line |
+| `body` | No | Text | Body text (stored in Body blob) |
+| `threadId` | No | GUID | Existing thread to append to |
+| `parentEntryNo` | Required when `threadId` is set | Integer | Parent entry no. |
+| `relatedTableId` | No | Integer | Table ID of the linked record |
+| `relatedRecordSystemId` | No | GUID | SystemId of the linked record |
+| `notificationType` | No | Text | Name of a `Notification Entry Type` enum value |
 
-Returns the created notification with `entryNo`.
+Returns the created Cloud Events Note record.
 
-### get_notifications
+### `User.Notification.Get`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
 | `skip` | No | Integer | Records to skip (default 0) |
 | `take` | No | Integer | Records to return (default 50) |
-| `tableView` | No | String | BC filter syntax |
+| `tableView` | No | Text | BC filter syntax |
 
-Response fields: `entryNo`, `threadId`, `parentEntryNo`,
-`recipientUserId`, `senderUserId`, `relatedTableId`,
+Returns notification entries with `entryNo`, `threadId`,
+`parentEntryNo`, `recipientUserId`, `senderUserId`, `relatedTableId`,
 `relatedRecordSystemId`, `approvalEntryNo`, `subject`, `body`, `isRead`,
 `sourceEntrySystemId`, `systemId`, `systemCreatedAt`,
 `systemModifiedAt`, `notificationType`.
 
-### mark_notifications_read
+### `User.Notification.Read`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `entryNos` | Yes | String | Comma-separated entry numbers |
-| `isRead` | No | Boolean | `true` = read (default), `false` = unread |
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `entryNos` | Yes | Text | Comma-separated entry numbers |
+| `isRead` | No | Boolean | `true` (default) = read, `false` = unread |
 
-### get_notification_count
+### `User.Notification.Count`
 
-No parameters. Returns: `total`, `unread`, `read` counts.
+No fields. Returns `total`, `unread`, `read`.
 
-### get_notification_thread
+### `User.Notification.Thread`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `threadId` | Yes | String (GUID) | Thread to retrieve |
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `threadId` | Yes | GUID | Thread to retrieve |
 | `skip` | No | Integer | Records to skip (default 0) |
 | `take` | No | Integer | Records to return (default 50) |
 
 ### Notification patterns
 
-- **Check unread:** Use `unreadNotifications` from `who_am_i` for quick summary. Call `get_notifications` for full details.
-- **Thread a conversation:** Send with a `threadId` (GUID). Reply with same `threadId` + `parentEntryNo`. Retrieve with `get_notification_thread`.
-- **Acknowledge:** After presenting content, offer to mark as read.
+- **Check unread:** Use `unreadNotifications` from `who_am_i` for a quick summary, then `User.Notification.Get` for full details.
+- **Thread a conversation:** Send with a `threadId` (GUID). Reply with same `threadId` + `parentEntryNo`. Retrieve the whole thread via `User.Notification.Thread`.
+- **Acknowledge:** After presenting content, offer to mark as read with `User.Notification.Read`.
 
 ---
 
-## Approval tools
+## Approval message types
 
-| Tool | Direction | Purpose |
+| Type | Direction | Purpose |
 |------|-----------|---------|
-| `get_my_approvals` | Outbound | Full details on approvals assigned to me |
-| `get_approval_entries` | Outbound | Approval history for a specific record |
-| `send_for_approval` | Inbound | Submit a record for approval |
-| `approve_entries` | Inbound | Approve one or more entries |
-| `reject_entries` | Inbound | Reject one or more entries |
-| `delegate_approval` | Inbound | Delegate to another user |
-| `cancel_approval` | Inbound | Cancel a pending approval request |
+| `Document.Approval.Me` | Outbound | Approvals assigned to me |
+| `Document.Approval.Get` | Outbound | Approval log for a specific record |
+| `Document.Approval.Send` | Inbound | Submit a record for approval |
+| `Document.Approval.Approve` | Inbound | Approve one or more entries |
+| `Document.Approval.Reject` | Inbound | Reject one or more entries |
+| `Document.Approval.Delegate` | Inbound | Delegate to another user |
+| `Document.Approval.Cancel` | Inbound | Cancel a pending approval request |
 
-### get_my_approvals
+### `Document.Approval.Me`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
 | `skip` | No | Integer | Records to skip (default 0) |
 | `take` | No | Integer | Records to return (default 50) |
-| `tableView` | No | String | BC filter syntax |
+| `tableView` | No | Text | BC filter syntax |
 
-Response per entry: `entryNo`, `sequenceNo`, `tableId`, `tableName`,
+Returns per entry: `entryNo`, `sequenceNo`, `tableId`, `tableName`,
 `tableCaption`, `documentType`, `documentNo`, `recordSystemId`,
 `status`, `dueDate`, `amount`, `amountLCY`, `currencyCode`,
 `comments[]`, `approvalCode`, `lastModified`,
 `linkedApprovalEntries[]`, `linkedPostedApprovalEntries[]`.
 
-### get_approval_entries
+### `Document.Approval.Get`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `tableName` | No | String | Table name (e.g. `Purchase Header`) |
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `tableName` | No | Text | Table name (e.g. `Purchase Header`) |
 | `tableNumber` | No | Integer | Table ID (e.g. `38`) |
-| `recordSystemId` | Yes | String (GUID) | SystemId of the record |
+| `recordSystemId` | Yes | GUID | SystemId of the record |
 | `skip` | No | Integer | Records to skip |
 | `take` | No | Integer | Records to return |
-| `tableView` | No | String | BC filter syntax |
+| `tableView` | No | Text | BC filter syntax |
 
-### send_for_approval
+### `Document.Approval.Send`
 
 Requires `canSendAndCancelApprovalRequests = true`.
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `tableName` | No | String | Table name |
-| `tableId` | No | Integer | Table ID |
-| `tableNumber` | No | Integer | Alias for tableId |
-| `recordSystemId` | Yes | String (GUID) | Record to submit |
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `tableName` | No | Text | Table name |
+| `tableId` / `tableNumber` | No | Integer | Table ID |
+| `recordSystemId` | Yes | GUID | Record to submit |
 | `approvals` | No | Array | Explicit chain: `[{ approverUserId, sequenceNo, dueDate, lineNumbers }]` |
 
 When `approvals` is omitted, BC uses the configured workflow.
 
-### approve_entries / reject_entries
+### `Document.Approval.Approve` / `Document.Approval.Reject`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
 | `entries` | No | Array | `[{ entryNo }]` or `[{ systemId }]` — batch |
 | `entryNo` | No | Integer | Single entry |
-| `systemId` | No | String (GUID) | Single entry by SystemId |
-| `comment` | No | String | Comment attached to the decision |
+| `systemId` | No | GUID | Single entry by SystemId |
+| `comment` | No | Text | Comment attached to the decision |
 
-Provide either `entries[]` for batch or `entryNo`/`systemId` for single.
+Provide either `entries[]` for batch or `entryNo` / `systemId` for a single entry.
 
-### delegate_approval
+### `Document.Approval.Delegate`
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
 | `entries` | No | Array | `[{ entryNo }]` or `[{ systemId }]` — batch |
 | `entryNo` | No | Integer | Single entry |
-| `systemId` | No | String (GUID) | Single entry by SystemId |
-| `delegateToUserId` | Yes | String | BC User ID to delegate to |
-| `comment` | No | String | Comment |
+| `systemId` | No | GUID | Single entry by SystemId |
+| `delegateToUserId` | Yes | Text | BC user name to delegate to |
+| `comment` | No | Text | Comment |
 
-### cancel_approval
+### `Document.Approval.Cancel`
 
 Requires `canSendAndCancelApprovalRequests = true`.
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `tableName` | No | String | Table name |
-| `tableId` | No | Integer | Table ID |
-| `tableNumber` | No | Integer | Table number |
-| `recordSystemId` | Yes | String (GUID) | Record to cancel |
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `tableName` | No | Text | Table name |
+| `tableId` / `tableNumber` | No | Integer | Table number |
+| `recordSystemId` | Yes | GUID | Record to cancel |
 
-**Document shortcuts** (provide one):
+**Document shortcuts** (provide one in place of `recordSystemId`):
 - Sales: `orderNo`, `quoteNo`, `invoiceNo`, `creditMemoNo`, `blanketOrderNo`, `returnOrderNo`
 - Purchase: same set
 
 ### Approval patterns
 
-- **Quick check → drill down:** `pendingApprovals` from `who_am_i` → `get_my_approvals` for full details.
-- **Approve/reject:** Present details → ask user → call `approve_entries` or `reject_entries` with optional comment.
-- **Delegation:** Use `delegate_approval` when user cannot act (e.g. out of office).
-- **Submit:** Use `send_for_approval` with the record's SystemId.
+- **Quick check → drill down:** `pendingApprovals` from `who_am_i` → `Document.Approval.Me` for full details.
+- **Approve/reject:** Present details → ask user → call `Document.Approval.Approve` or `Document.Approval.Reject` with optional comment.
+- **Delegation:** Use `Document.Approval.Delegate` when the user cannot act (e.g. out of office).
+- **Submit:** Use `Document.Approval.Send` with the record's SystemId.
+
+---
+
+## Example calls
+
+```js
+// Send a notification
+await call_message_type({
+  type: "User.Notification.Send",
+  data: {
+    recipientUserId: "JANE",
+    subject: "Please review SO-1023",
+    body: "Customer asked about shipping date.",
+    relatedTableId: 36,
+    relatedRecordSystemId: "a1b2c3d4-...",
+  },
+});
+
+// Approve a batch
+await call_message_type({
+  type: "Document.Approval.Approve",
+  data: {
+    entries: [{ entryNo: 1042 }, { entryNo: 1043 }],
+    comment: "Approved per email thread 2026-05-10",
+  },
+});
+```

@@ -3,6 +3,18 @@
 All notable changes to the `origo-bc` Cowork plugin are documented here.
 The plugin follows [semantic versioning](https://semver.org/).
 
+## [0.4.3] — 2026-06-03
+
+### Changed
+
+- Patch bump of plugin, marketplace, and all bundled skill versions:
+  - `origo-bc-setup` 0.7.1 → 0.7.2
+  - `origo-bc-add-env` 0.6.0 → 0.6.1
+  - `origo-bc-update-env` 0.5.1 → 0.5.2
+  - `origo-bc-list-environments` 0.3.0 → 0.3.1
+  - `origo-bc-accounting` 1.0.3 → 1.0.4
+  - `origo-bc-cloud-events` 0.1.0 → 0.1.1
+
 ## [0.3.0] — 2026-04-23
 
 ### Breaking — connection format

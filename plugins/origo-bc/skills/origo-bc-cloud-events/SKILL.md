@@ -7,7 +7,7 @@ description: >
   development work. It loads the full authoring rules, message type catalog,
   and examples via the MCP server.
 metadata:
-  version: "0.1.0"
+  version: "0.1.1"
   author: "Origo hf."
 ---
 
@@ -49,8 +49,8 @@ credentials.
 - Pagination patterns and batch processing
 - Integration timestamp management (`get_integration_timestamp`,
   `set_integration_timestamp`, `reverse_integration_timestamp`)
-- Cloud Events Delete Log queries (`get_deleted_records`,
-  `get_deleted_record_ids`)
+- Cloud Events Delete Log queries (message types `Deleted.Records.Get`,
+  `Deleted.RecordIds.Get`)
 - UBL XML templates and document generation
 - Error handling and retry patterns
 - Authoring rules for new message types
@@ -58,17 +58,35 @@ credentials.
 ## Related MCP tools (require BC connection)
 
 These tools are part of the Cloud Events ecosystem and require an active BC
-connection:
+connection.
+
+**Standalone tools:**
 
 | Tool | Purpose |
 |------|---------|
 | `get_records` | Read records via Data.Records.Get |
 | `set_records` | Write records via Data.Records.Set |
 | `batch_records` | Execute multiple record operations in a single call |
-| `get_deleted_records` | Full record snapshots from the Cloud Events Delete Log |
-| `get_deleted_record_ids` | Lightweight deleted record ID list for incremental sync |
+| `get_record_count` | Count rows matching a `tableView` filter |
+| `get_decimal_total` | Sum a decimal column for matching rows |
+| `get_record_ids` | Return primary keys + SystemId for matching rows |
 | `get_integration_timestamp` | Latest non-reversed timestamp for a source + tableId |
 | `set_integration_timestamp` | Record a new integration timestamp |
 | `reverse_integration_timestamp` | Mark the latest timestamp as reversed |
-| `get_item_availability` | Item inventory / projected availability |
-| `changelog_field_enabled` | Check Change Log coverage for a field |
+
+**Invoked via `call_message_type` (`{ type, data }`):**
+
+| Message type | Purpose |
+|--------------|---------|
+| `Deleted.Records.Get` | Full record snapshots from the Cloud Events Delete Log |
+| `Deleted.RecordIds.Get` | Lightweight deleted record ID list for incremental sync |
+| `CSV.Records.Get` | Bulk CSV export (Open Mirroring format) |
+| `CSV.DeletedRecords.Get` | Bulk CSV export of deletes |
+| `Item.Availability.Get` | Item inventory / projected availability |
+| `ChangeLog.Field.Enabled` | Check Change Log coverage for a field |
+| `ChangeLog.Field.History` | Field value history from the Change Log |
+| `ChangeLog.Field.Restore` | Restore a prior field value |
+| `ChangeLog.Records.Delta` | Distinct SystemIds changed since a timestamp |
+| `Help.WhoAmI.Get` | Identity, permissions, and pending counts for the caller |
+| `Help.NextLineNo.Get` | Next available document line number |
+| `Help.Tables.Get` / `Help.MessageTypes.Get` | Catalog discovery |

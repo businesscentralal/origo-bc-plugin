@@ -11,7 +11,7 @@ description: >
   (AES-256-GCM encrypted via the server's `encrypt_data` endpoint) in
   their own terminal, then writes a new entry into the Cowork MCP config.
 metadata:
-  version: "0.7.1"
+  version: "0.7.2"
   author: "Origo hf."
 ---
 

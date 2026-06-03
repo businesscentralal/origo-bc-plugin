@@ -5,7 +5,7 @@ description: >
   the MCP server at dynamics.is, skills/prompts stored in BC, memory tools,
   default skills/notes/prompts, UBL templates, or `/origo-bc-*` commands.
 metadata:
-  version: "1.0.3"
+  version: "1.0.4"
   author: "Origo hf."
 references:
   - url: https://github.com/businesscentralal/origo-bc-plugin/blob/main/plugins/origo-bc/skills/origo-bc-accounting/references/TOOLS.md
@@ -124,15 +124,28 @@ Employee `socialSecurityNo` (kennitala) = Customer/Vendor/Contact `Registration 
 
 ## 6. Notifications & Approvals
 
-Tools: `send_notification`, `get_notifications`, `mark_notifications_read`,
-`get_notification_count`, `get_notification_thread`, `get_my_approvals`,
-`get_approval_entries`, `send_for_approval`, `approve_entries`,
-`reject_entries`, `delegate_approval`, `cancel_approval`.
+All notification and approval operations run through `call_message_type`
+(`{ type, data }`) — there are no standalone tools for these any more.
+
+| Message type | Purpose |
+|--------------|---------|
+| `User.Notification.Send` | Send a notification to a BC user |
+| `User.Notification.Get` | Retrieve notifications for the caller |
+| `User.Notification.Read` | Mark notifications as read / unread |
+| `User.Notification.Count` | Total / unread / read counts |
+| `User.Notification.Thread` | All notifications in one thread |
+| `Document.Approval.Me` | Approvals assigned to the caller |
+| `Document.Approval.Get` | Approval log for a specific record |
+| `Document.Approval.Send` | Submit a record for approval |
+| `Document.Approval.Approve` / `Document.Approval.Reject` | Decide on entries |
+| `Document.Approval.Delegate` | Reassign to another user |
+| `Document.Approval.Cancel` | Cancel a pending request |
 
 **Quick patterns:**
-- Check unread: `unreadNotifications` from who_am_i → `get_notifications` for full details.
+- Check unread: `unreadNotifications` from `who_am_i` → `call_message_type({ type: "User.Notification.Get" })` for full details.
 - Thread: send with `threadId`, reply with same `threadId` + `parentEntryNo`.
-- Approvals: `pendingApprovals` from who_am_i → `get_my_approvals` → present → approve/reject.
+- Approvals: `pendingApprovals` from `who_am_i` → `call_message_type({ type: "Document.Approval.Me" })` → present → `Document.Approval.Approve` or `.Reject`.
+- Schema for any message type: `get_message_type_help({ type })`.
 
 > **Full parameter tables:** Load `references/TOOLS.md` when you need exact parameters.
 

@@ -9,7 +9,7 @@ description: >
   Claude Desktop MCP config file and shows a table of every `bc-*` entry
   with its resolved default company.
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   author: "Origo hf."
 ---
 

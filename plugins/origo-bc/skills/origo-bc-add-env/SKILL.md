@@ -9,7 +9,7 @@ description: >
   under `%USERPROFILE%\OrigoBC\` and only appends a new entry to the Cowork
   MCP config.
 metadata:
-  version: "0.6.0"
+  version: "0.6.1"
   author: "Origo hf."
 ---
 

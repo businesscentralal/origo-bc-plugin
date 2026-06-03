@@ -63,9 +63,22 @@ await process_incoming_document({ entryNo: N });
 ### Step 4: Approve + Post (if approval workflow active)
 
 ```js
-await send_for_approval({ recordSystemId: "...", tableName: "Purchase Header", approvals: [{approverUserId: "USER", sequenceNo: 1}] });
-await approve_entries({ entries: [{entryNo: N}] });
-await post_purchase_document({ invoiceNo: "R000XX" });
+await call_message_type({
+  type: "Document.Approval.Send",
+  data: {
+    recordSystemId: "...",
+    tableName: "Purchase Header",
+    approvals: [{ approverUserId: "USER", sequenceNo: 1 }],
+  },
+});
+await call_message_type({
+  type: "Document.Approval.Approve",
+  data: { entries: [{ entryNo: N }] },
+});
+await call_message_type({
+  type: "Purchase.Document.Post",
+  data: { invoiceNo: "R000XX" },
+});
 ```
 
 ### Pre-requisites for successful processing
