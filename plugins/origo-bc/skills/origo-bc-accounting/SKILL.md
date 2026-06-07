@@ -5,7 +5,7 @@ description: >
   the MCP server at dynamics.is, skills/prompts stored in BC, memory tools,
   default skills/notes/prompts, UBL templates, or `/origo-bc-*` commands.
 metadata:
-  version: "1.0.4"
+  version: "1.1.0"
   author: "Origo hf."
 references:
   - url: https://github.com/businesscentralal/origo-bc-plugin/blob/main/plugins/origo-bc/skills/origo-bc-accounting/references/TOOLS.md
@@ -38,9 +38,29 @@ Rules for the Origo BC MCP endpoint (`https://dynamics.is/api/mcp`).
 admin-injected behavioural instructions for this user+company.
 Skip silently if null/empty.
 
-**On failure:** Surface error and stop. Never proceed without identity.
+**Step 3 — Cloud Events API primer:** Before composing any data query or write,
+prime yourself on how the API works (load once per session):
+1. **Overview** — `call_message_type({ type: "Help.CloudEvents.Get" })` →
+   returns a short directory of the `Help.*` discovery endpoints
+   (`Help.MessageTypes.Get`, `Help.Tables.Get`, `Help.Fields.Get`,
+   `Help.TableRelations.Get`, `Help.WhoAmI.Get`, `Help.NextLineNo.Get`, …) and
+   tells you how to reach the full guide.
+2. **Full technical guide** — `call_message_type({ type: "Help.Implementation.Get", subject: "Help.CloudEvents.Get" })`
+   → returns the full how-to: counting records, server-side totals
+   (`Data.Totals.Get` / CalcSums), FlowFields & FlowFilters, `tableView`
+   CONST-vs-FILTER syntax, primary-key forms (jsonKey vs display name),
+   `Data.Records.Set` upsert semantics, currency/`CurrencyFactor`, binary
+   fields (Blob/Media/MediaSet), the Change Log Write Guard, and LCID handling.
+   (Equivalent shortcut: `get_message_type_help({ type: "Help.CloudEvents.Get" })`.)
 
-**On company switch:** Repeat both steps with the new `companyId`.
+This primer prevents the most common query/write mistakes. For pure
+notification or approval sessions it can be skipped until the first `Data.*` call.
+
+**On failure:** Surface error and stop. Never proceed without identity (Step 1).
+
+**On company switch:** Repeat Steps 1–2 with the new `companyId`. The Step 3
+primer can be reused unless the new company exposes different message types
+(re-run `Help.CloudEvents.Get` if a call fails with an unknown-type error).
 
 ---
 
